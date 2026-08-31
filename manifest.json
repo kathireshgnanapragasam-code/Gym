@@ -1,11 +1,11 @@
 {
-  "name": "Roshan Fitness Tracker",
-  "short_name": "Fitness",
-  "description": "Personal fitness tracker — workouts, food, health",
+  "name": "Gym",
+  "short_name": "Gym",
+  "description": "Personal gym tracker — workouts, food, recipes, progress",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#080C14",
-  "theme_color": "#F5A623",
+  "background_color": "#15110D",
+  "theme_color": "#E0A339",
   "orientation": "portrait-primary",
   "icons": [
     {

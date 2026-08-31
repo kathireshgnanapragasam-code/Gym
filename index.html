@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Roshan Fitness v3.8</title>
+<title>Gym v1.0</title>
 <style>
 :root{
   --bg:#15110D;--c1:#1E1811;--c2:#2A2118;--c3:#3D2F1F;
@@ -213,13 +213,13 @@ textarea.genin{resize:none}
 <div id="warn-banner" class="warn-banner">Private mode detected &#x2014; data will NOT be saved</div>
 <div class="hdr">
   <div class="hdr-toprow">
-    <div class="ht">Roshan Fitness</div>
-    <div class="vtag" title="build 2026-08-22">v3.8</div>
+    <div class="ht">Gym</div>
+    <div class="vtag" title="build 2026-08-31">v1.0</div>
   </div>
   <div class="hs" id="hsub">Loading...</div>
   <div class="mrow">
-    <div class="met"><div class="mv" id="hdr-p-mv"><span class="hdricon">&#x26A1;</span> <span id="hdr-p">0g</span></div><div class="ml" id="hdr-p-lbl">/ 150g protein</div></div>
-    <div class="met"><div class="mv" id="hdr-k-mv"><span class="hdricon">&#x1F525;</span> <span id="hdr-k">0</span></div><div class="ml" id="hdr-k-lbl">/ 2100 kcal</div></div>
+    <div class="met"><div class="mv" id="hdr-p-mv"><span class="hdricon">&#x26A1;</span> <span id="hdr-p">0g</span></div><div class="ml" id="hdr-p-lbl">/ 140g protein</div></div>
+    <div class="met"><div class="mv" id="hdr-k-mv"><span class="hdricon">&#x1F525;</span> <span id="hdr-k">0</span></div><div class="ml" id="hdr-k-lbl">/ 2200 kcal</div></div>
     <div class="met"><div class="mv"><span class="hdricon">&#x2696;</span> <span id="hdr-wt" style="color:var(--grn)">&#x2014;</span></div><div class="ml">3wk avg wt</div></div>
   </div>
 </div>
@@ -228,7 +228,7 @@ textarea.genin{resize:none}
   <button class="tab" data-t="1">Progress</button>
   <button class="tab" data-t="2">Food</button>
   <button class="tab" data-t="3">History</button>
-  <button class="tab" data-t="4">Flare</button>
+  <button class="tab" data-t="4">Recipes</button>
 </div>
 <div class="pnl on" id="p0"></div>
 <div class="pnl" id="p1"></div>
@@ -246,99 +246,106 @@ textarea.genin{resize:none}
 </script>
 <script>
 /* ===== DATA ===== */
-const SEQ=['Push day','Pull day','Legs + core','Upper body'];
+const SEQ=['Push day','Pull day','Legs day','Cardio + core'];
 const DAYS=[
-  {label:'Push day',focus:'Chest \u00b7 Shoulders \u00b7 Triceps',time:'~6pm',ex:[
-    {n:'Bench press',s:4,r:'6\u20138',nt:'Exhale on press \u2014 never hold breath',priority:'must',compound:true,inputType:'weight',wlabel:'Total kg incl. 20kg bar',primaryMuscles:['Chest'],secondaryMuscles:['Triceps','Front delts'],tip:'Shoulder blades pulled back and down before you unrack \u2014 that\u2019s your base, don\u2019t let it move.'},
-    {n:'Incline DB press',s:3,r:'10\u201312',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Upper chest'],secondaryMuscles:['Front delts','Triceps'],tip:'Elbows at roughly 45 degrees, not flared to 90 \u2014 that angle is what shifts the work to upper chest.'},
-    {n:'Machine chest fly',s:3,r:'12\u201315',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Chest'],secondaryMuscles:[],tip:'Squeeze at the peak, don\u2019t let the stack slam on the way back \u2014 control both directions.'},
-    {n:'Seated DB shoulder press',s:3,r:'10\u201312',nt:'Seated \u2014 less pressure on seton sites',priority:'must',compound:true,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Front delts'],secondaryMuscles:['Triceps','Side delts'],tip:'Press slightly forward, not straight overhead \u2014 that path is easier on the shoulder.'},
-    {n:'Lateral raises',s:3,r:'15\u201320',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Side delts'],secondaryMuscles:[],tip:'Lead with your elbows, not your hands \u2014 stop at shoulder height, don\u2019t swing it up.'},
-    {n:'Cable tricep pushdown',s:4,r:'12\u201315',nt:'Straight bar or rope, your call',priority:'must',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Triceps (lateral/medial)'],secondaryMuscles:[],tip:'Elbows stay pinned at your sides \u2014 if they drift forward you\u2019re using shoulders, not triceps.'},
-    {n:'Overhead tricep extension',s:3,r:'12',nt:'Rope attachment \u2014 lets wrists rotate through the stretch',priority:'optional',compound:false,inputType:'weight',wlabel:'DB weight (one hand)',primaryMuscles:['Triceps (long head)'],secondaryMuscles:[],tip:'Elbows point forward, not flared out to the sides \u2014 that\u2019s what keeps tension on the long head.'}
+  {label:'Push day',focus:'Chest \u00b7 Shoulders \u00b7 Triceps (no bench)',time:'Gym',ex:[
+    {n:'Incline DB press',s:4,r:'8\u201310',nt:'Main chest press \u2014 no flat bench needed',priority:'must',compound:true,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Upper chest'],secondaryMuscles:['Front delts','Triceps'],tip:'Elbows at roughly 45 degrees, not flared to 90 \u2014 that angle shifts work to upper chest.'},
+    {n:'Machine chest press',s:3,r:'10\u201312',nt:'Stable pressing without a barbell bench',priority:'must',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Chest'],secondaryMuscles:['Triceps','Front delts'],tip:'Drive handles forward without locking out hard \u2014 keep tension on the chest.'},
+    {n:'Machine chest fly',s:3,r:'12\u201315',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Chest'],secondaryMuscles:[],tip:'Squeeze at the peak, control the return \u2014 don\u2019t let the stack slam.'},
+    {n:'Seated DB shoulder press',s:3,r:'8\u201310',nt:'',priority:'must',compound:true,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Front delts'],secondaryMuscles:['Triceps','Side delts'],tip:'Press slightly forward, not straight overhead \u2014 easier on the shoulder joint.'},
+    {n:'Lateral raises',s:3,r:'12\u201315',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Side delts'],secondaryMuscles:[],tip:'Lead with elbows, stop at shoulder height \u2014 no swinging.'},
+    {n:'Cable tricep pushdown',s:3,r:'10\u201312',nt:'',priority:'must',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Triceps (lateral/medial)'],secondaryMuscles:[],tip:'Elbows pinned at your sides \u2014 if they drift forward you\u2019re using shoulders.'},
+    {n:'Overhead tricep extension',s:3,r:'10\u201312',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'DB weight (one hand)',primaryMuscles:['Triceps (long head)'],secondaryMuscles:[],tip:'Elbows point forward, not flared \u2014 keeps tension on the long head.'}
   ]},
-  {label:'Pull day',focus:'Back \u00b7 Biceps',time:'~6pm',ex:[
-    {n:'Pull-ups (unassisted)',s:4,r:'Max reps',nt:'Signature \u2014 beat last week total',priority:'must',noweight:true,inputType:'bodyweight',wlabel:'Bodyweight (add kg if weighted)',primaryMuscles:['Lats'],secondaryMuscles:['Biceps','Mid-back'],tip:'Full extension at the bottom, drive your elbows down and back \u2014 no kipping or swinging.'},
-    {n:'Lat pulldown',s:3,r:'10\u201312',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Lats'],secondaryMuscles:['Biceps'],tip:'Lead with your elbows, pull to your upper chest \u2014 don\u2019t lean back to cheat the weight down.'},
-    {n:'Seated cable row',s:3,r:'10\u201312',nt:'Exhale as you pull \u2014 no breath holding',priority:'must',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Mid-back'],secondaryMuscles:['Lats','Biceps','Traps'],tip:'Chest up, pull to your lower ribs \u2014 if your lower back is rounding, drop the weight.'},
-    {n:'Single arm DB row',s:3,r:'12 each',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Dumbbell weight (one hand)',primaryMuscles:['Mid-back'],secondaryMuscles:['Lats','Biceps'],tip:'Brace your free hand, keep your torso still \u2014 don\u2019t twist to help the weight up.'},
-    {n:'Face pulls',s:3,r:'15\u201320',nt:'Never skip \u2014 shoulder health \u00b7 rope attachment, not optional for this one',priority:'must',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Rear delts','Traps'],secondaryMuscles:['Rotator cuff'],tip:'Pull to eye level and rotate your hands outward at the end, like drawing a bow \u2014 that\u2019s what makes it work.'},
-    {n:'Barbell curl',s:3,r:'10\u201312',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Total kg incl. bar (bar weight varies by gym \u2014 check yours)',primaryMuscles:['Biceps'],secondaryMuscles:[],tip:'Elbows pinned to your sides the whole rep \u2014 if they drift forward, the weight\u2019s too heavy.'},
-    {n:'Hammer curls',s:3,r:'12\u201315',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Brachialis'],secondaryMuscles:['Biceps','Forearms'],tip:'Neutral grip the whole rep, thumbs up \u2014 if your wrist rotates, you\u2019ve drifted into a regular curl.'},
-    {n:'Dumbbell wrist curls',s:3,r:'15\u201320',nt:'Forearm on thigh, wrist only \u2014 slow and controlled, light weight is enough here',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Forearms'],secondaryMuscles:[],tip:'Small range of motion, forearm braced on your thigh \u2014 this one doesn\u2019t need much weight to work.'},
-    {n:'Dumbbell shrugs',s:3,r:'12\u201315',nt:'Straight up, no rolling the shoulders \u2014 that\u2019s where irritation comes from',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Traps'],secondaryMuscles:[],tip:'Straight up and down \u2014 rolling your shoulders doesn\u2019t add anything, just adds irritation risk.'}
+  {label:'Pull day',focus:'Back \u00b7 Biceps \u00b7 Rear delts',time:'Gym',ex:[
+    {n:'Pull-ups or lat pulldown',s:4,r:'\u2014',nt:'Pick one below',priority:'must',noweight:true,inputType:'choice',primaryMuscles:['Lats'],secondaryMuscles:['Biceps','Mid-back'],
+     choiceOptions:[{name:'Pull-ups (unassisted)',r:'Max reps',inputType:'bodyweight',primaryMuscles:['Lats'],secondaryMuscles:['Biceps','Mid-back']},{name:'Lat pulldown',r:'8\u201312',inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Lats'],secondaryMuscles:['Biceps']}]},
+    {n:'Seated cable row',s:4,r:'8\u201312',nt:'',priority:'must',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Mid-back'],secondaryMuscles:['Lats','Biceps','Traps'],tip:'Chest up, pull to lower ribs \u2014 if lower back rounds, drop the weight.'},
+    {n:'Single arm DB row',s:3,r:'10\u201312',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Dumbbell weight (one hand)',primaryMuscles:['Mid-back'],secondaryMuscles:['Lats','Biceps'],tip:'Brace free hand, keep torso still \u2014 don\u2019t twist the weight up.'},
+    {n:'Face pulls',s:3,r:'12\u201315',nt:'Never skip \u2014 balances all the pressing',priority:'must',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Rear delts','Traps'],secondaryMuscles:['Rotator cuff'],tip:'Pull to eye level and rotate hands outward at the end.'},
+    {n:'Dumbbell curl (alternating)',s:3,r:'10\u201312',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Biceps (long head)'],secondaryMuscles:[],tip:'Full supination at the top \u2014 rotate palm up as you curl.'},
+    {n:'Hammer curls',s:3,r:'10\u201312',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Brachialis'],secondaryMuscles:['Biceps','Forearms'],tip:'Neutral grip the whole rep \u2014 thumbs up.'},
+    {n:'Dumbbell shrugs',s:3,r:'12\u201315',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Traps'],secondaryMuscles:[],tip:'Straight up and down \u2014 no rolling the shoulders.'}
   ]},
-  {label:'Legs + core',focus:'No squats. No deadlifts.',time:'~6pm',ex:[
-    {n:'Leg press',s:4,r:'12\u201315',nt:'Safe \u2014 no spinal or perianal pressure \u00b7 exhale on push, never hold breath',priority:'must',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Quads'],secondaryMuscles:['Glutes','Hamstrings'],tip:'Don\u2019t let your knees cave inward, and don\u2019t lock out hard at the top \u2014 keep a soft knee.'},
-    {n:'Leg extension (machine)',s:3,r:'15',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Quads'],secondaryMuscles:[],tip:'Controlled tempo, brief pause at the top \u2014 momentum here just skips the muscle doing the work.'},
-    {n:'Seated leg curl',s:3,r:'15',nt:'Seated preferred',priority:'must',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Hamstrings'],secondaryMuscles:[],tip:'Full range, controlled tempo \u2014 don\u2019t bounce out of the stretch at the bottom.'},
-    {n:'Calf raises',s:4,r:'20',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Add kg if weighted',primaryMuscles:['Calves'],secondaryMuscles:[],tip:'Pause at the top, full stretch at the bottom \u2014 bouncing through the reps skips the actual work.'},
-    {n:'Plank',s:3,r:'30\u201360s',nt:'Exhale on entry \u2014 no breath holding',priority:'must',noweight:true,inputType:'seconds',wlabel:'Seconds held',primaryMuscles:['Core'],secondaryMuscles:[],tip:'Hips level \u2014 not sagging, not piked up. Breathe normally, don\u2019t hold your breath.'},
-    {n:'Dead bug',s:3,r:'10 each',nt:'Best Crohn-safe core move',priority:'must',noweight:true,inputType:'reps_each',wlabel:'Reps per side',primaryMuscles:['Core'],secondaryMuscles:[],tip:'Lower back stays pressed into the floor the whole time \u2014 if it arches, you\u2019ve gone too far.'},
-    {n:'Hip abduction machine',s:3,r:'15',nt:'Glute work \u2014 light and controlled, no direct pressure needed',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Glute medius/minimus'],secondaryMuscles:[],tip:'Controlled push out, controlled return \u2014 no need to rush this one.'},
-    {n:'Hip adduction machine',s:3,r:'15',nt:'Same machine as abduction, opposite direction \u2014 light and controlled',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Adductors'],secondaryMuscles:[],tip:'Same machine as abduction, opposite direction \u2014 light and controlled here too.'},
-    {n:'Cable crunch',s:3,r:'12\u201315',nt:'Rope attachment, kneeling \u2014 real flexion work, unlike Plank/Dead bug',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Abs'],secondaryMuscles:[],tip:'Round through your spine, don\u2019t just pull with your arms \u2014 the crunch happens at your waist.'},
-    {n:'Cable pull-through',s:3,r:'12',nt:'Continuous cable tension, not a bar on your spine \u2014 controlled hip hinge, exhale on the way up, never hold breath',priority:'optional',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Lower back'],secondaryMuscles:['Glutes','Hamstrings'],tip:'Push your hips back, not down \u2014 this is a hinge, not a squat.'}
+  {label:'Legs day',focus:'Quads \u00b7 Hamstrings \u00b7 Glutes \u00b7 Calves (no squats / deadlifts)',time:'Gym',ex:[
+    {n:'Leg press',s:4,r:'10\u201315',nt:'Main lower-body compound without a squat',priority:'must',compound:true,inputType:'weight',wlabel:'Stack / sled weight',primaryMuscles:['Quads'],secondaryMuscles:['Glutes','Hamstrings'],tip:'Knees track over toes, soft lockout at the top \u2014 no bouncing out of the hole.'},
+    {n:'Walking lunges',s:3,r:'10 each',nt:'Extra leg volume without a back squat',priority:'must',compound:true,inputType:'weight',wlabel:'Per dumbbell (each hand) \u2014 or 0 for bodyweight',primaryMuscles:['Quads'],secondaryMuscles:['Glutes','Hamstrings'],tip:'Long strides, torso upright \u2014 front knee tracks over the mid-foot.'},
+    {n:'Leg extension (machine)',s:3,r:'12\u201315',nt:'',priority:'must',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Quads'],secondaryMuscles:[],tip:'Controlled tempo, brief pause at the top.'},
+    {n:'Seated leg curl',s:3,r:'12\u201315',nt:'',priority:'must',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Hamstrings'],secondaryMuscles:[],tip:'Full range, no bouncing out of the stretch.'},
+    {n:'Machine hip thrust',s:3,r:'10\u201312',nt:'Glute focus without a barbell hinge',priority:'must',compound:true,inputType:'weight',wlabel:'Stack / plate weight',primaryMuscles:['Glutes'],secondaryMuscles:['Hamstrings'],tip:'Drive through heels, squeeze at the top, don\u2019t overarch the lower back.'},
+    {n:'Calf raises',s:4,r:'12\u201320',nt:'',priority:'must',compound:false,inputType:'weight',wlabel:'Add kg if weighted',primaryMuscles:['Calves'],secondaryMuscles:[],tip:'Pause at the top, full stretch at the bottom.'},
+    {n:'Hip abduction machine',s:3,r:'12\u201315',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Glute medius/minimus'],secondaryMuscles:[],tip:'Controlled push out and return.'},
+    {n:'Hip adduction machine',s:3,r:'12\u201315',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Adductors'],secondaryMuscles:[],tip:'Same machine as abduction, opposite direction.'},
+    {n:'Cable pull-through',s:3,r:'10\u201312',nt:'Hip hinge pattern without a deadlift bar',priority:'optional',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Lower back'],secondaryMuscles:['Glutes','Hamstrings'],tip:'Hips back, not down \u2014 this is a hinge, not a squat.'}
   ]},
-  {label:'Upper body',focus:'Strength + hypertrophy mix',time:'~10\u201311am',ex:[
-    {n:'Pull-ups (unassisted)',s:3,r:'Max reps',nt:'',priority:'must',noweight:true,inputType:'bodyweight',wlabel:'Bodyweight (add kg if weighted)',primaryMuscles:['Lats'],secondaryMuscles:['Biceps','Mid-back'],tip:'Full extension at the bottom, drive your elbows down and back \u2014 no kipping or swinging.'},
-    {n:'Dips (chest-focused, forward lean)',s:3,r:'8\u201310',nt:'Lower chest \u2014 lean forward, elbows flared \u00b7 exhale on push \u2014 never hold breath',priority:'must',compound:true,inputType:'bodyweight',wlabel:'Bodyweight (add kg if weighted)',primaryMuscles:['Lower chest'],secondaryMuscles:['Triceps','Front delts'],tip:'Lean forward and let your elbows flare \u2014 staying upright turns this into a triceps move instead.'},
-    {n:'Arnold press',s:3,r:'12',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Front delts'],secondaryMuscles:['Side delts','Triceps'],tip:'Rotate through the full twist smoothly \u2014 palms face you at the bottom, face forward at the top.'},
-    {n:'Seated cable row',s:3,r:'12',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Mid-back'],secondaryMuscles:['Lats','Biceps','Traps'],tip:'Chest up, pull to your lower ribs \u2014 if your lower back is rounding, drop the weight.'},
-    {n:'Dumbbell curl (alternating)',s:3,r:'12',nt:'Standard supinated curl \u2014 Pull day already covers barbell + hammer',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Biceps (long head)'],secondaryMuscles:[],tip:'Full supination at the top \u2014 rotate your palm up as you curl, not just lift straight.'},
-    {n:'Cable tricep pushdown',s:3,r:'10',nt:'Superset with overhead extension below \u2014 no rest between the two \u00b7 straight bar or rope',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Triceps (lateral/medial)'],secondaryMuscles:[],tip:'Elbows stay pinned at your sides \u2014 if they drift forward you\u2019re using shoulders, not triceps.'},
-    {n:'Overhead tricep extension',s:3,r:'10',nt:'Second half of the superset \u2014 straight into this after pushdown \u00b7 rope attachment',priority:'optional',compound:false,inputType:'weight',wlabel:'DB weight (one hand)',primaryMuscles:['Triceps (long head)'],secondaryMuscles:[],tip:'Elbows point forward, not flared out to the sides \u2014 that\u2019s what keeps tension on the long head.'},
-    {n:'Plank or dead bug',s:3,r:'\u2014',nt:'Core finisher \u2014 pick one below',priority:'must',noweight:true,inputType:'choice',primaryMuscles:['Core'],secondaryMuscles:[],
-     choiceOptions:[{name:'Plank',r:'30\u201360s',inputType:'seconds',primaryMuscles:['Core'],secondaryMuscles:[]},{name:'Dead bug',r:'10 each side',inputType:'reps_each',primaryMuscles:['Core'],secondaryMuscles:[]}]}
+  {label:'Cardio + core',focus:'Conditioning + midsection',time:'Gym / outdoors',ex:[
+    {n:'Steady cardio',s:1,r:'20\u201340 min',nt:'Log minutes in the time field',priority:'must',noweight:true,inputType:'choice',primaryMuscles:['Cardio'],secondaryMuscles:[],
+     choiceOptions:[
+       {name:'Incline treadmill walk',r:'25\u201340 min',inputType:'seconds',wlabel:'Minutes',primaryMuscles:['Cardio'],secondaryMuscles:['Calves','Glutes']},
+       {name:'Exercise bike',r:'20\u201335 min',inputType:'seconds',wlabel:'Minutes',primaryMuscles:['Cardio'],secondaryMuscles:['Quads']},
+       {name:'Rowing machine',r:'15\u201325 min',inputType:'seconds',wlabel:'Minutes',primaryMuscles:['Cardio'],secondaryMuscles:['Lats','Mid-back']},
+       {name:'Outdoor run / jog',r:'20\u201330 min',inputType:'seconds',wlabel:'Minutes',primaryMuscles:['Cardio'],secondaryMuscles:['Calves','Quads']}
+     ]},
+    {n:'Intervals (optional finisher)',s:1,r:'10\u201315 min',nt:'Work hard / easy repeats',priority:'optional',noweight:true,inputType:'seconds',wlabel:'Minutes',primaryMuscles:['Cardio'],secondaryMuscles:[],tip:'Example: 1 min hard, 1 min easy \u00d7 8\u201310. Log total minutes.'},
+    {n:'Plank',s:3,r:'30\u201360s',nt:'',priority:'must',noweight:true,inputType:'seconds',wlabel:'Seconds held',primaryMuscles:['Core'],secondaryMuscles:[],tip:'Hips level \u2014 not sagging, not piked. Breathe normally.'},
+    {n:'Dead bug',s:3,r:'10 each',nt:'',priority:'must',noweight:true,inputType:'reps_each',wlabel:'Reps per side',primaryMuscles:['Core'],secondaryMuscles:[],tip:'Lower back stays pressed into the floor.'},
+    {n:'Cable crunch',s:3,r:'12\u201315',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Abs'],secondaryMuscles:[],tip:'Round through the spine \u2014 crunch at the waist, not just arm pull.'},
+    {n:'Hanging knee raises',s:3,r:'8\u201312',nt:'',priority:'optional',noweight:true,inputType:'bodyweight',wlabel:'Bodyweight',primaryMuscles:['Abs'],secondaryMuscles:['Hip flexors'],tip:'Control the swing \u2014 raise knees with the abs, not momentum.'}
   ]}
 ];
 const SUBS={
-  'Bench press':['DB flat chest press','Machine chest press'],
-  'Incline DB press':['Incline machine press','Incline BB press','High-to-low cable fly','Incline press (Smith machine)'],
+  'Incline DB press':['Incline machine press','Incline press (Smith machine)','High-to-low cable fly'],
+  'Machine chest press':['DB flat chest press','Pec deck'],
   'Machine chest fly':['Cable fly','DB fly','Pec deck'],
-  'Seated DB shoulder press':['Smith machine shoulder press','Machine shoulder press'],
+  'Seated DB shoulder press':['Machine shoulder press','Arnold press','Smith machine shoulder press'],
   'Lateral raises':['Cable lateral raise','Machine lateral raise'],
   'Cable tricep pushdown':['Rope pushdown','DB kickback','Machine tricep dip'],
   'Overhead tricep extension':['Cable overhead extension','Skull crushers'],
-  'Pull-ups (unassisted)':['Assisted pull-ups (machine)','Lat pulldown','Band-assisted pull-ups'],
-  'Lat pulldown':['Pull-ups','Straight arm pulldown'],
+  'Pull-ups or lat pulldown':['Assisted pull-ups (machine)','Band-assisted pull-ups','Lat pulldown','Pull-ups (unassisted)'],
   'Seated cable row':['DB row','Machine row','T-bar row','Smith machine row'],
   'Single arm DB row':['Cable single arm row','Machine row'],
   'Face pulls':['Reverse cable fly','Rear delt machine fly','Band pull-apart'],
-  'Barbell curl':['DB curl','EZ bar curl','Cable curl','Reverse EZ bar curl'],
+  'Dumbbell curl (alternating)':['EZ bar curl','Cable curl','Barbell curl','Reverse EZ bar curl'],
   'Hammer curls':['Cable hammer curl','Cross-body curl'],
-  'Leg press':['Step-ups (bodyweight)','Wall sit (hold 60s)','Pendulum/hack squat machine (light weight only \u2014 stop on any pain)'],
+  'Dumbbell shrugs':['Barbell shrug','Smith machine shrug'],
+  'Leg press':['Hack squat machine (light)','Step-ups (bodyweight)','Wall sit (hold 60s)'],
+  'Walking lunges':['Reverse lunges','Bulgarian split squat (light DBs)','Step-ups (bodyweight)'],
   'Leg extension (machine)':['TKE \u2014 terminal knee extension'],
-  'Seated leg curl':['Lying leg curl (if ok)','Nordic curl'],
+  'Seated leg curl':['Lying leg curl','Nordic curl'],
+  'Machine hip thrust':['Cable kickback','Glute bridge (bodyweight)'],
   'Calf raises':['Seated calf raise','Single-leg calf raise'],
-  'Plank':['Dead bug','Bear crawl hold','Pallof press'],
-  'Dips (chest-focused, forward lean)':['Decline press (Smith machine)','Decline machine press'],
-  'Dead bug':['Bird-dog','Pallof press'],
-  'Hip abduction machine':['Cable kickback','Machine hip thrust'],
+  'Hip abduction machine':['Cable kickback','Band side walk'],
+  'Hip adduction machine':['Copenhagen plank (short holds)'],
   'Cable pull-through':['45\u00b0 back extension','Bird dog'],
-  'Arnold press':['DB shoulder press','Machine shoulder press'],
-  'Dumbbell curl (alternating)':['EZ bar curl','Cable curl','Machine curl','Barbell curl','Reverse EZ bar curl'],
-  'Plank or dead bug':['Bear hold','Pallof press']
+  'Steady cardio':['Jump rope','Stair climber','Elliptical'],
+  'Intervals (optional finisher)':['Jump rope intervals','Assault bike intervals'],
+  'Plank':['Dead bug','Bear crawl hold','Pallof press'],
+  'Dead bug':['Bird-dog','Pallof press'],
+  'Cable crunch':['Ab wheel (kneeling)','Lying crunch'],
+  'Hanging knee raises':['Captain\u2019s chair knee raises','Lying leg raises']
 };
-/* S2: substitutes whose natural measurement type differs from the exercise they replace.
-   Applied whenever the active exercise name matches a key here, regardless of which
-   original slot it is substituting for. */
+/* Substitutes whose measurement type differs from the slot they replace. */
 const SUB_TYPE_OVERRIDE={
   'Lat pulldown':{inputType:'weight',wlabel:'Stack weight'},
   'Assisted pull-ups (machine)':{inputType:'weight',wlabel:'Assist stack weight (lighter assist = harder)'},
-  'Pull-ups':{inputType:'bodyweight',wlabel:'Bodyweight (add kg if weighted)',noweight:true},
+  'Pull-ups (unassisted)':{inputType:'bodyweight',wlabel:'Bodyweight (add kg if weighted)',noweight:true},
   'Step-ups (bodyweight)':{inputType:'bodyweight',wlabel:'Bodyweight (add kg if weighted)',noweight:true},
   'Wall sit (hold 60s)':{inputType:'seconds',wlabel:'Seconds held',noweight:true},
   'Pallof press':{inputType:'weight',wlabel:'Stack weight'},
-  'Pendulum/hack squat machine (light weight only \u2014 stop on any pain)':{nt:'Light weight only \u2014 stop immediately on any pain, cleared for this specifically, not a blanket safe claim'},
-  'Decline press (Smith machine)':{nt:'Decline angle for lower chest \u2014 exhale on press, never hold breath'},
-  'Decline machine press':{nt:'Decline angle for lower chest \u2014 exhale on press, never hold breath'},
-  'Reverse cable fly':{nt:'Never skip \u2014 shoulder health'},
-  'Reverse EZ bar curl':{primaryMuscles:['Forearms'],secondaryMuscles:['Brachialis'],nt:'Pronated grip \u2014 lighter than your normal curl weight, this hits differently'},
-  'Rear delt machine fly':{nt:'Never skip \u2014 shoulder health'},
-  'Band pull-apart':{nt:'Never skip \u2014 shoulder health'},
-  '45\u00b0 back extension':{inputType:'bodyweight',wlabel:'Bodyweight (add plate to chest if weighted)',noweight:true,nt:'Slow and controlled \u2014 don\u2019t overarch at the top, exhale as you rise'},
-  'Bird dog':{inputType:'bodyweight',wlabel:'Bodyweight',noweight:true,nt:'Opposite arm and leg, controlled \u2014 same safe pattern as Dead bug'}
+  'Hack squat machine (light)':{nt:'Light to moderate \u2014 stop if knees or back complain'},
+  'Bulgarian split squat (light DBs)':{nt:'Short range is fine \u2014 balance first, load second'},
+  'Glute bridge (bodyweight)':{inputType:'bodyweight',wlabel:'Bodyweight (add plate to hips if weighted)',noweight:true},
+  'Reverse cable fly':{nt:'Shoulder health \u2014 keep elbows soft'},
+  'Rear delt machine fly':{nt:'Shoulder health'},
+  'Band pull-apart':{nt:'Shoulder health'},
+  'Reverse EZ bar curl':{primaryMuscles:['Forearms'],secondaryMuscles:['Brachialis'],nt:'Pronated grip \u2014 lighter than your normal curl'},
+  '45\u00b0 back extension':{inputType:'bodyweight',wlabel:'Bodyweight (add plate to chest if weighted)',noweight:true,nt:'Slow and controlled \u2014 don\u2019t overarch'},
+  'Bird dog':{inputType:'bodyweight',wlabel:'Bodyweight',noweight:true},
+  'Jump rope':{inputType:'seconds',wlabel:'Minutes',noweight:true},
+  'Stair climber':{inputType:'seconds',wlabel:'Minutes',noweight:true},
+  'Elliptical':{inputType:'seconds',wlabel:'Minutes',noweight:true},
+  'Jump rope intervals':{inputType:'seconds',wlabel:'Minutes',noweight:true},
+  'Assault bike intervals':{inputType:'seconds',wlabel:'Minutes',noweight:true}
 };
 function findExDef(name){
   for(const d of DAYS){for(const e of d.ex){
@@ -377,88 +384,36 @@ function inferSubWlabel(name){
   return null;
 }
 const FOODS=[
-  /* ===== Protein ===== */
-  {name:'Chettinad chicken (bone-in)',cat:'Protein',per100:{k:186,p:15.5,c:6,f:12},typ:200,lbl:'desiccated coconut + coconut oil',oilInclusive:true},
-  {name:'Chettinad chicken (boneless)',cat:'Protein',per100:{k:204,p:21,c:6,f:11},typ:175,lbl:'desiccated coconut + coconut oil',oilInclusive:true},
-  {name:'Chicken curry (bone-in)',cat:'Protein',per100:{k:135,p:18,c:3,f:6},typ:200},
-  {name:'Chicken curry (boneless)',cat:'Protein',per100:{k:165,p:25,c:4,f:6},typ:150},
-  {name:'Chicken drumstick (oven, masala, skin on)',cat:'Protein',per100:{k:215,p:24,c:1.5,f:11},typ:90,unit:'piece',lbl:'per piece (~90g cooked)',oilInclusive:true},
-  {name:'Chicken thigh (bone-in, oven, masala)',cat:'Protein',per100:{k:210,p:20,c:1,f:14},typ:95,unit:'piece',lbl:'per thigh (~95g cooked)',oilInclusive:true},
-  {name:'Chicken tikka (dry grilled)',cat:'Protein',per100:{k:165,p:28,c:2,f:5},typ:150,lbl:'high protein, low carb'},
-  {name:'Egg sandwich (3 eggs)',cat:'Protein',per100:{k:210,p:11.5,c:13,f:12.5},typ:250,unit:'piece',lbl:'per sandwich (3 eggs, 2 slices, mayo+cheese, ~250g, ~530 kcal / 29g P)'},
-  {name:'Fish curry (white fish)',cat:'Protein',per100:{k:120,p:20,c:3,f:4},typ:150},
-  {name:'Gongura chicken curry (bone-in)',cat:'Protein',per100:{k:140,p:18,c:3,f:7},typ:200,lbl:'sorrel leaf masala, bone-in weight, oil inclusive',oilInclusive:true},
-  {name:'Gongura chicken curry (boneless)',cat:'Protein',per100:{k:170,p:24,c:4,f:7},typ:150,lbl:'sorrel leaf masala, coconut oil inclusive',oilInclusive:true},
-  {name:'Mutton curry',cat:'Protein',per100:{k:195,p:20,c:3,f:12},typ:150},
-  {name:'Mutton curry (mixed bone-in/boneless)',cat:'Protein',per100:{k:195,p:20,c:3,f:12},typ:150,lbl:'500g bone-in + 1kg boneless per batch, cooked together for flavour + yield'},
-  {name:'Mutton fry / varuval (boneless)',cat:'Protein',per100:{k:250,p:27,c:3,f:14},typ:150,lbl:'460g raw \u2192 300g cooked, 2 meals, oil inclusive',oilInclusive:true},
-  {name:'Mutton keema',cat:'Protein',per100:{k:210,p:19,c:4,f:14},typ:150,lbl:'sourced from Tesco halal mince spec, adjusted for draining + curry base \u2014 tell me if it needs adjusting once made'},
-  {name:'Pomfret fry',cat:'Protein',per100:{k:165,p:22,c:2,f:8},typ:70,unit:'piece',lbl:'per piece (~70g)',oilInclusive:true},
-  {name:'Prawn curry',cat:'Protein',per100:{k:100,p:18,c:2,f:3},typ:150},
-  {name:'Salmon fry',cat:'Protein',per100:{k:220,p:25,c:1,f:13},typ:105,unit:'piece',lbl:'per fillet (~105g cooked, Tesco/Aldi 4-pack)',oilInclusive:true},
-  {name:'Thai red curry (chicken)',cat:'Protein',per100:{k:140,p:12,c:5,f:9},typ:200},
-  {name:'Tofu masala / fry',cat:'Protein',per100:{k:110,p:8,c:5,f:6},typ:150,oilInclusive:true},
-  /* ===== Carbs ===== */
-  {name:'Bagel (plain, supermarket)',cat:'Carbs',per100:{k:260,p:9,c:51,f:1.5},typ:100,unit:'piece',lbl:'per bagel (Tesco / Aldi ~100g)'},
-  {name:'Chapati / roti (homemade)',cat:'Carbs',per100:{k:255,p:7.5,c:45,f:5.5},typ:40,unit:'piece',lbl:'per chapati (~40g)'},
-  {name:'Dosa (plain)',cat:'Carbs',per100:{k:229,p:4,c:30,f:10.7},typ:75,unit:'piece',lbl:'per dosa (oil-inclusive)',oilInclusive:true},
-  {name:'Fried rice (home, 2 eggs)',cat:'Carbs',per100:{k:175,p:5,c:28,f:6},typ:150},
-  {name:'Idli',cat:'Carbs',per100:{k:130,p:4,c:26,f:0.5},typ:30,unit:'piece',lbl:'per idli'},
-  {name:'Pongal',cat:'Carbs',per100:{k:140,p:4,c:25,f:3},typ:150},
-  {name:'Ponni rice (cooked)',cat:'Carbs',per100:{k:120,p:2.5,c:26,f:0.3},typ:150,lbl:'cooked weight \u2014 ~55g dry rice makes ~150g cooked'},
-  {name:'Sandwich (oven patty + egg)',cat:'Carbs',per100:{k:220,p:14,c:20,f:8},typ:200,unit:'piece',lbl:'per sandwich'},
-  {name:'Sona Masoori rice (cooked)',cat:'Carbs',per100:{k:115,p:2.3,c:25,f:0.3},typ:150,lbl:'cooked weight \u2014 ~55g dry rice makes ~150g cooked'},
-  {name:'Uttapam (plain, homemade)',cat:'Carbs',per100:{k:185,p:5,c:30,f:5.5},typ:100,unit:'piece',lbl:'per piece (~100g)'},
-  {name:'White rice generic (cooked)',cat:'Carbs',per100:{k:130,p:2.7,c:28,f:0.3},typ:150,lbl:'cooked weight \u2014 ~55g dry rice makes ~150g cooked'},
-  /* ===== Mains ===== */
-  {name:'Chicken biryani (Hyderabadi, bone-in)',cat:'Mains',per100:{k:175,p:7,c:25,f:7},typ:400,lbl:'estimate ~400g plate'},
-  {name:'Chicken biryani (Hyderabadi, boneless)',cat:'Mains',per100:{k:190,p:9,c:24,f:7.5},typ:400,lbl:'estimate ~400g plate'},
-  {name:'Chicken burger (supermarket patty + bun)',cat:'Mains',per100:{k:230,p:16,c:20,f:9},typ:200,unit:'piece',lbl:'per burger (~200g)'},
-  {name:'Chicken pasta (cream / white sauce)',cat:'Mains',per100:{k:175,p:10,c:13,f:8},typ:400,lbl:'your 60% of 2-person batch (~400g)'},
-  {name:'Chicken pasta (tomato sauce)',cat:'Mains',per100:{k:125,p:11,c:14,f:3},typ:400,lbl:'your 60% of 2-person batch (~400g)'},
-  {name:'Chicken shawarma wrap (takeaway)',cat:'Mains',per100:{k:215,p:14,c:22,f:8},typ:350,unit:'piece',lbl:'per wrap (ESTIMATE \u2014 varies by shop)'},
-  {name:'Mee goreng (home, chicken+egg+anchovy)',cat:'Mains',per100:{k:167,p:10,c:12,f:7.5},typ:450,lbl:'3 tbsp oil, bigger share of 2-person batch',oilInclusive:true},
-  {name:'Mutton biryani (Hyderabadi, bone-in)',cat:'Mains',per100:{k:210,p:9,c:22,f:11},typ:400,lbl:'estimate ~400g plate'},
-  {name:'Nasi goreng (home, chicken+egg+anchovy)',cat:'Mains',per100:{k:169,p:9.5,c:14,f:7},typ:450,lbl:'3 tbsp oil, bigger share of 2-person batch',oilInclusive:true},
-  {name:'Nasi lemak (basic, egg & sambal)',cat:'Mains',per100:{k:192,p:5.5,c:24,f:8.5},typ:300,lbl:'estimate ~300g plate'},
-  /* ===== Sides ===== */
-  {name:'Beans fry (kothavarai)',cat:'Sides',per100:{k:71,p:1.5,c:3.6,f:6.3},typ:100,lbl:'oil-inclusive',oilInclusive:true},
-  {name:'Chickpeas masala (tinned)',cat:'Sides',per100:{k:175,p:7,c:22,f:6.5},typ:150,lbl:'1 tin drained, 2 tsp oil inclusive. Pair with protein',oilInclusive:true,fibreRisk:true},
-  {name:'Coconut rice (thengai sadam)',cat:'Sides',per100:{k:150,p:2.7,c:22,f:4.7},typ:200,lbl:'rice + desiccated coconut + coconut oil tempering',oilInclusive:true},
-  {name:'Curd / plain yogurt',cat:'Sides',per100:{k:61,p:3.5,c:5,f:3.3},typ:150},
-  {name:'Curd rice (thayir sadam)',cat:'Sides',per100:{k:120,p:4,c:22,f:2.5},typ:200,lbl:'Crohn\u2019s rest-day staple. Rice + curd + small tempering'},
-  {name:'Greek yogurt (Tesco Finest, full-fat)',cat:'Sides',per100:{k:132,p:6.5,c:3.3,f:10.3},typ:150},
-  {name:'Paruppu / dal (plain)',cat:'Sides',per100:{k:95,p:6,c:14,f:1.5},typ:150},
-  {name:'Poriyal (generic dry veg fry)',cat:'Sides',per100:{k:85,p:2,c:12,f:3.5},typ:100,lbl:'cabbage / carrot / raw banana / beans. Oil inclusive',oilInclusive:true},
-  {name:'Potato fry',cat:'Sides',per100:{k:175,p:2,c:18,f:11.2},typ:100,lbl:'oil-inclusive',oilInclusive:true},
-  {name:'Puli kuzhambu (veg)',cat:'Sides',per100:{k:80,p:1.5,c:9,f:4.5},typ:150,lbl:'tamarind gravy with brinjal/drumstick, gingelly oil inclusive',oilInclusive:true},
-  {name:'Rajma masala (tinned, thick gravy)',cat:'Sides',per100:{k:120,p:6,c:17,f:3.5},typ:200,lbl:'carb-dominant \u2014 pair with protein source',fibreRisk:true},
-  {name:'Rasam',cat:'Sides',per100:{k:20,p:0.8,c:3,f:0.5},typ:200,unit:'ml'},
-  {name:'Sambar (loaded veg)',cat:'Sides',per100:{k:45,p:2.5,c:6,f:1},typ:200},
-  {name:'Soya chunks masala fry',cat:'Sides',per100:{k:200,p:17,c:22,f:6.5},typ:150,lbl:'50g dry \u2192 150g cooked, 1.5 tsp oil inclusive',oilInclusive:true,fibreRisk:true},
-  {name:'Spinach paruppu',cat:'Sides',per100:{k:85,p:5.5,c:11,f:2},typ:150},
-  /* ===== Greens ===== */
-  {name:'Drumstick leaves (murungai)',cat:'Greens',per100:{k:64,p:9.4,c:8,f:1.4},typ:50,lbl:'per 50g handful'},
-  {name:'Methi leaves (fenugreek)',cat:'Greens',per100:{k:49,p:4.4,c:6,f:0.9},typ:50},
-  {name:'Spinach (fresh)',cat:'Greens',per100:{k:23,p:2.9,c:3.6,f:0.4},typ:100},
-  /* ===== Eggs ===== */
+  /* Starter staples — add HelloFresh meals & supplements via Recipes (photo → save). */
+  {name:'Chicken breast (grilled)',cat:'Protein',per100:{k:165,p:31,c:0,f:3.6},typ:150},
+  {name:'Chicken thigh (skinless, cooked)',cat:'Protein',per100:{k:179,p:25,c:0,f:8},typ:150},
+  {name:'Salmon (baked)',cat:'Protein',per100:{k:208,p:22,c:0,f:13},typ:120},
+  {name:'Tuna (tinned in brine, drained)',cat:'Protein',per100:{k:86,p:19,c:0,f:1},typ:100},
+  {name:'Lean beef mince (5%, cooked)',cat:'Protein',per100:{k:176,p:27,c:0,f:8},typ:150},
   {name:'Egg (boiled, medium)',cat:'Eggs',per100:{k:155,p:13,c:1,f:11},typ:58,unit:'piece',lbl:'per egg'},
-  {name:'Egg (boiled, small)',cat:'Eggs',per100:{k:155,p:13,c:1,f:11},typ:45,unit:'piece',lbl:'per small egg'},
-  {name:'Egg dosa (home, small)',cat:'Eggs',per100:{k:227,p:8,c:14,f:14.7},typ:95,unit:'piece',lbl:'per egg dosa (oil-inclusive)',oilInclusive:true},
-  {name:'Egg fry / omelette (per egg)',cat:'Eggs',per100:{k:190,p:12,c:1,f:15},typ:55,unit:'piece',lbl:'per egg, fried or in omelette (oil-inclusive) \u2014 log 2 or 3 for a full omelette',oilInclusive:true},
-  /* ===== Cooling ===== */
-  {name:'Coconut water',cat:'Cooling',per100:{k:21,p:0.7,c:5,f:0.2},typ:330,unit:'ml',lbl:'per glass (330ml)'},
-  {name:'Cucumber (raw)',cat:'Cooling',per100:{k:15,p:0.7,c:3,f:0.1},typ:100},
-  {name:'Mixed berries',cat:'Cooling',per100:{k:50,p:1,c:11,f:0.4},typ:100},
-  {name:'Neer moru (spiced buttermilk)',cat:'Cooling',per100:{k:40,p:3,c:4,f:1.5},typ:200,unit:'ml',lbl:'per glass (200ml)'},
-  {name:'Watermelon',cat:'Cooling',per100:{k:30,p:0.6,c:7,f:0.2},typ:200},
-  /* ===== Extras ===== */
-  {name:'Boost (1 cup, with whole milk)',cat:'Extras',per100:{k:91.4,p:3.93,c:10.47,f:3.83},typ:271,unit:'piece',lbl:'250ml whole milk + 3 tsp powder'},
-  {name:'Bulk Soya Protein Isolate (Chocolate)',cat:'Extras',per100:{k:390,p:87,c:5,f:3},typ:30,unit:'scoop',lbl:'per scoop (30g = 26g protein)'},
-  {name:'Cooking oil',cat:'Extras',per100:{k:884,p:0,c:0,f:100},typ:5,unit:'tsp',lbl:'per tsp (5ml) \u2014 only if NOT already in dish'},
-  {name:'Cowbelle protein milkshake (Aldi)',cat:'Extras',per100:{k:110,p:7.6,c:12,f:2.5},typ:330,unit:'piece',lbl:'per carton (330ml = 25g protein)'},
-  {name:'Ghee',cat:'Extras',per100:{k:900,p:0,c:0,f:100},typ:5,unit:'tsp',lbl:'per tsp \u2014 only if NOT already in dish'},
-  {name:'Serious Gainz protein powder',cat:'Extras',per100:{k:375,p:22,c:65.1,f:2.85},typ:41.7,unit:'scoop',lbl:'per scoop (~41.7g) \u2014 you usually take 1.5. Swap to whey isolate when tub finishes: 3\u00d7 protein per kcal'},
+  {name:'Egg fry / omelette (per egg)',cat:'Eggs',per100:{k:190,p:12,c:1,f:15},typ:55,unit:'piece',lbl:'per egg, oil-inclusive',oilInclusive:true},
+  {name:'Greek yogurt (0% fat)',cat:'Protein',per100:{k:59,p:10,c:3.6,f:0.4},typ:170},
+  {name:'Cottage cheese',cat:'Protein',per100:{k:98,p:11,c:3.4,f:4.3},typ:150},
+  {name:'Tofu (firm)',cat:'Protein',per100:{k:144,p:17,c:3,f:9},typ:150},
+  {name:'White rice (cooked)',cat:'Carbs',per100:{k:130,p:2.7,c:28,f:0.3},typ:150},
+  {name:'Brown rice (cooked)',cat:'Carbs',per100:{k:112,p:2.6,c:24,f:0.9},typ:150},
+  {name:'Pasta (cooked)',cat:'Carbs',per100:{k:131,p:5,c:25,f:1.1},typ:180},
+  {name:'Potato (boiled)',cat:'Carbs',per100:{k:87,p:1.9,c:20,f:0.1},typ:200},
+  {name:'Sweet potato (baked)',cat:'Carbs',per100:{k:90,p:2,c:21,f:0.2},typ:200},
+  {name:'Oats (dry)',cat:'Carbs',per100:{k:389,p:17,c:66,f:7},typ:40},
+  {name:'Wholemeal bread',cat:'Carbs',per100:{k:247,p:13,c:41,f:4.2},typ:40,unit:'piece',lbl:'per slice (~40g)'},
+  {name:'Banana',cat:'Carbs',per100:{k:89,p:1.1,c:23,f:0.3},typ:120,unit:'piece',lbl:'per medium banana'},
+  {name:'Apple',cat:'Carbs',per100:{k:52,p:0.3,c:14,f:0.2},typ:180,unit:'piece'},
+  {name:'Broccoli (cooked)',cat:'Greens',per100:{k:35,p:2.4,c:7,f:0.4},typ:100},
+  {name:'Mixed salad (no dressing)',cat:'Greens',per100:{k:20,p:1.2,c:3,f:0.2},typ:100},
+  {name:'Spinach (fresh)',cat:'Greens',per100:{k:23,p:2.9,c:3.6,f:0.4},typ:100},
+  {name:'Avocado',cat:'Extras',per100:{k:160,p:2,c:9,f:15},typ:70},
+  {name:'Olive oil',cat:'Extras',per100:{k:884,p:0,c:0,f:100},typ:5,unit:'tsp',lbl:'per tsp (5ml)'},
+  {name:'Cooking oil',cat:'Extras',per100:{k:884,p:0,c:0,f:100},typ:5,unit:'tsp',lbl:'per tsp \u2014 only if not already in dish'},
+  {name:'Whey protein (generic scoop)',cat:'Supplements',per100:{k:400,p:80,c:8,f:5},typ:30,unit:'scoop',lbl:'per scoop (~30g) \u2014 edit macros to match your tub'},
+  {name:'Creatine monohydrate',cat:'Supplements',per100:{k:0,p:0,c:0,f:0},typ:5,unit:'scoop',lbl:'5g daily \u2014 negligible macros'},
+  {name:'Milk (semi-skimmed)',cat:'Extras',per100:{k:47,p:3.5,c:4.8,f:1.7},typ:250,unit:'ml'},
+  {name:'HelloFresh meal (placeholder)',cat:'Mains',per100:{k:150,p:12,c:15,f:5},typ:400,lbl:'Replace with a photo recipe from your pack label'}
 ];
 const DNAMES=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const MEAL_TYPES=['Breakfast','Lunch','Dinner','Snack'];
@@ -479,7 +434,7 @@ function showStorageFailWarning(){
   document.body.insertAdjacentHTML('afterbegin','<div id="storage-fail-banner" style="position:relative;z-index:998;background:var(--rbg);color:var(--red);font-size:13px;font-weight:700;padding:9px 14px;text-align:center">&#x26A0; Your device is out of storage space \u2014 this change may NOT have saved. Free up space or export/share your data now.</div>');
 }
 function getProfile(){
-  return lsG('user_profile')||{targets:{protein:150,kcal:2100,carbs:230,fat:65},weight:85,goalWeight:82,goalBF:15,trainingDaysPerWeek:4,crohnsPhase:'pre-biologic',biologicStartDate:null};
+  return lsG('user_profile')||{targets:{protein:140,kcal:2200,carbs:220,fat:65},weight:71,heightCm:175,goalWeight:70,goalBF:14,trainingDaysPerWeek:4};
 }
 function saveProfile(p){lsS('user_profile',p);}
 function saveTargets(){
@@ -513,6 +468,10 @@ function checkStorage(){try{localStorage.setItem('__t__','1');localStorage.remov
    since the library's regional split doesn't perfectly mirror ours everywhere \u2014
    marked inline where that's true. */
 const MUSCLE_TAG_TO_LIB_IDS={
+  'Cardio':['quads-left','quads-right','calves-gastroc-medial-left','calves-gastroc-medial-right'],
+  'Hip flexors':['hip-flexor-left','hip-flexor-right'],
+  'Glutes':['gluteus-maximus-left','gluteus-maximus-right'],
+  'Abs':['abs-upper-left','abs-upper-right','abs-lower-left','abs-lower-right'],
   'Chest':['chest-lower-left','chest-lower-right'],
   'Upper chest':['chest-upper-left','chest-upper-right'],
   'Lower chest':['chest-lower-left','chest-lower-right'],
@@ -1159,7 +1118,7 @@ function showSkipSheet(){
   const sheet=document.createElement('div');
   sheet.id='skipsheet';sheet.className='skipsheet';sheet.style.cssText='position:fixed;bottom:0;left:0;right:0;background:var(--c1);border-top:1px solid var(--c3);padding:20px;z-index:999';
   sheet.innerHTML=`<div style="font-size:14px;font-weight:700;margin-bottom:12px;color:var(--mut)">Why skipping?</div>
-    <button class="skipopt" onclick="skipSession('flare');this.closest('#skipsheet').remove()">Flare day</button>
+    <button class="skipopt" onclick="skipSession('sick');this.closest('#skipsheet').remove()">Sick / injured</button>
     <button class="skipopt" onclick="skipSession('tired');this.closest('#skipsheet').remove()">Too tired</button>
     <button class="skipopt" onclick="skipSession('busy');this.closest('#skipsheet').remove()">Too busy</button>
     <button class="skipopt" style="color:var(--mut);font-weight:500" onclick="this.closest('#skipsheet').remove()">Cancel</button>`;
@@ -1217,69 +1176,9 @@ function showTextModal(title,text){
     else{alert('Select the text manually to copy.');}
   };
 }
-function gastroExport(){
-  const stats=(lsG('bstats')||[]).filter(s=>s.wt||s.bf);
-  const first=stats[0],latest=stats[stats.length-1];
-  const cutoff28=(()=>{const d=new Date();d.setDate(d.getDate()-28);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})();
-  const recentStats=stats.filter(s=>s.date>=cutoff28);
-  let rateLine='Not enough data yet';
-  if(recentStats.length>=2){
-    const withWt=recentStats.filter(s=>s.wt);
-    const mid=Math.ceil(withWt.length/2);
-    const firstHalf=withWt.slice(0,mid),secondHalf=withWt.slice(mid).length?withWt.slice(mid):withWt.slice(-1);
-    const avgA=firstHalf.reduce((s,e)=>s+parseFloat(e.wt),0)/firstHalf.length;
-    const avgB=secondHalf.reduce((s,e)=>s+parseFloat(e.wt),0)/secondHalf.length;
-    const days=(new Date(withWt[withWt.length-1].date)-new Date(withWt[0].date))/86400000;
-    if(days>0&&withWt.length>=2){
-      const pctPerWeek=(((avgA-avgB)/avgA)*100)/(days/7);
-      rateLine=pctPerWeek.toFixed(2)+'% per week (smoothed)'+(Math.abs(pctPerWeek)>0.75?' \u2014 ABOVE 0.75% threshold, flag to gastro':'');
-    }
-  }
-  const entries=Object.entries(mergedMlog()).filter(([k])=>k>=cutoff28).map(e=>e[1]);
-  const done=entries.filter(e=>e.type==='done').length;
-  const flareSkips=entries.filter(e=>e.type==='skip'&&e.reason==='flare').length;
-  const planned=entries.length;
-  let energySum=0,energyN=0,bowelNormal=0,bowelOff=0,setonConcern=0,symN=0;
-  for(let i=0;i<28;i++){
-    const d=new Date();d.setDate(d.getDate()-i);
-    const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-    const s=lsG('sym:'+k);if(!s)continue;symN++;
-    if(s.energy){energySum+=parseInt(s.energy);energyN++;}
-    if(s.bowel==='normal')bowelNormal++;else if(s.bowel)bowelOff++;
-    if(s.seton==='concerning')setonConcern++;
-  }
-  const avgEnergy=energyN?(energySum/energyN).toFixed(1):'\u2014';
-  const text='ROSHAN ARASU \u2014 GASTRO SUMMARY ('+todayKey()+')\n\n'
-    +'WEIGHT & BODY COMPOSITION\n'
-    +'  Start on record: '+(first?first.wt+'kg / '+(first.bf||'\u2014')+'% BF ('+first.date+')':'No data')+'\n'
-    +'  Current: '+(latest?latest.wt+'kg / '+(latest.bf||'\u2014')+'% BF ('+latest.date+')':'No data')+'\n'
-    +'  Rate, last 4 weeks: '+rateLine+'\n\n'
-    +'TRAINING (last 4 weeks)\n'
-    +'  Sessions completed: '+done+' of '+planned+' logged days\n'
-    +'  Symptom-triggered rest days: '+flareSkips+'\n\n'
-    +'SYMPTOMS (last 4 weeks, '+symN+' days logged)\n'
-    +'  Average energy: '+avgEnergy+'/5\n'
-    +'  Bowel: '+bowelNormal+' days normal, '+bowelOff+' days off\n'
-    +'  Seton \u2014 concerning drainage logged on '+setonConcern+' day(s)\n\n'
-    +'QUESTIONS FOR THIS APPOINTMENT\n'
-    +'  - B12: currently oral \u2014 is sublingual or IM better absorbed for terminal ileum disease?\n'
-    +'  - Vitamin D: Sheffield latitude + malabsorption risk \u2014 worth testing?\n'
-    +'  - Infliximab + azathioprine combination: what\'s an actual safe alcohol limit for me, and how does that interact with the LFT monitoring schedule?\n'
-    +'  - Seton: does axial loading / bracing under load / deep hip flexion pose a specific risk here \u2014 does that include machine-guided squat variations (e.g. leverage/hack squat), not just free squats?\n';
-  if(navigator.canShare&&navigator.canShare({text})){
-    navigator.share({title:'Gastro summary '+todayKey(),text}).catch(()=>showTextModal('Gastro summary',text));
-  }else{showTextModal('Gastro summary',text);}
-}
-const APP_VERSION='v3.8';
-function checkUpdate(){
-  if(!navigator.onLine)return;
-  fetch('https://arasroshan-cell.github.io/Fitness/index.html',{cache:'no-store'}).then(r=>r.text()).then(txt=>{
-    const m=txt.match(/Roshan Fitness (v[\d.]+[a-z]?)/);
-    if(m&&m[1]!==APP_VERSION){
-      document.body.insertAdjacentHTML('afterbegin','<div style="position:relative;z-index:999;background:var(--abg);color:var(--amb);font-size:13px;font-weight:700;padding:9px 14px;text-align:center">'+m[1]+' is live but this device runs '+APP_VERSION+' \u2014 clear cached files (not site data) in browser settings, then reload.</div>');
-    }
-  }).catch(()=>{});
-}
+function gastroExport(){/* removed — no medical export in personal Gym build */}
+const APP_VERSION='v1.0';
+function checkUpdate(){/* local personal build — no remote version check */}
 function importData(input){
   const file=input.files[0];if(!file)return;
   const reader=new FileReader();
@@ -1320,7 +1219,7 @@ let _wxCache={temp:null,ts:0};
 async function fetchWeather(){
   if(_wxCache.temp!==null&&Date.now()-_wxCache.ts<1800000)return _wxCache.temp;
   try{
-    const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude=53.3811&longitude=-1.4701&current=temperature_2m&timezone=Europe%2FLondon&forecast_days=1',{signal:AbortSignal.timeout(3000)});
+    const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude=51.5074&longitude=-0.1278&current=temperature_2m&timezone=Europe%2FLondon&forecast_days=1',{signal:AbortSignal.timeout(3000)});
     const d=await r.json();_wxCache={temp:Math.round(d.current.temperature_2m),ts:Date.now()};return _wxCache.temp;
   }catch{return _wxCache.temp;}
 }
@@ -1330,18 +1229,14 @@ async function injectWeather(){
   if(temp===null){el.remove();return;}
   let wx='';
   if(temp>=23){wx=`<div class="card cyan" style="margin-top:8px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <div><div class="cl">Sheffield now</div><div style="font-size:20px;font-family:'Barlow',sans-serif;font-weight:900;color:var(--cyan)">${temp}&#x00B0;C Hot</div></div>
-    </div>
-    <div style="font-size:13px;color:var(--mut);margin-bottom:10px">Higher dehydration risk with Crohn's in this heat. Tamil cooling foods today:</div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap">
-      ${['Neer moru','Coconut water','Cucumber (raw)','Watermelon'].map(f=>`<button class="qb" onclick="quickLog('${f}',allFoods().find(x=>x.name==='${f}')?.typ||200)">${f}</button>`).join('')}
-    </div></div>`;}
+    <div class="cl">Outside now</div>
+    <div style="font-size:20px;font-family:'Barlow',sans-serif;font-weight:900;color:var(--cyan)">${temp}&#x00B0;C Hot</div>
+    <div style="font-size:13px;color:var(--mut);margin-top:6px">Hydrate extra on training days.</div></div>`;}
   else if(temp<=5){wx=`<div class="card" style="border-color:var(--cyan);margin-top:8px">
-    <div class="cl">Sheffield now</div>
+    <div class="cl">Outside now</div>
     <div style="font-size:20px;font-family:'Barlow',sans-serif;font-weight:900;color:var(--cyan)">${temp}&#x00B0;C Cold</div>
-    <div style="font-size:13px;color:var(--mut);margin-top:6px">Cold weather can tighten joints \u2014 extend warm-up by 5 min.</div></div>`;}
-  else{wx=`<div style="font-size:12px;color:var(--mut);margin-top:4px;text-align:right">Sheffield ${temp}&#x00B0;C</div>`;}
+    <div style="font-size:13px;color:var(--mut);margin-top:6px">Cold can tighten joints \u2014 take a longer warm-up.</div></div>`;}
+  else{wx=`<div style="font-size:12px;color:var(--mut);margin-top:4px;text-align:right">${temp}&#x00B0;C</div>`;}
   el.outerHTML=wx;
 }
 
@@ -1362,48 +1257,23 @@ function renderToday(){
   const existing=Data.session.get();
   const sym=lsG('sym:'+todayKey())||{};
   const water=lsG('water:'+todayKey())||0;
-  const symDone=sym.energy&&sym.seton&&sym.bowel;
   const _freshList=Coach.getMuscleFreshness();
   let html='';
 
-  html+=`<div style="display:flex;justify-content:flex-end;margin-bottom:8px">
-    <button class="btn btn-ghost btn-sm" onclick="gastroExport()">&#x1F4CB; Gastro summary</button>
-  </div>`;
-
-  /* -- Symptom check-in -- */
-  if(symDone){
+  /* -- Energy check-in -- */
+  if(sym.energy){
     const eCol=sym.energy>=4?'var(--grn)':sym.energy>=3?'var(--amb)':'var(--red)';
-    const sCol=sym.seton<=2?'var(--grn)':sym.seton===3?'var(--amb)':'var(--red)';
     html+=`<div class="card" style="padding:11px 14px;margin-bottom:10px">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:11px;color:var(--mut);font-weight:700;letter-spacing:1px;text-transform:uppercase">Health &#x2713;</span>
-        <div style="display:flex;gap:14px;font-size:14px;font-weight:700">
-          <span>Energy <span style="color:${eCol}">${sym.energy}/5</span></span>
-          <span>Seton <span style="color:${sCol}">${sym.seton}/5</span></span>
-          <span style="color:${sym.bowel==='normal'?'var(--grn)':'var(--red)'}">${sym.bowel==='normal'?'&#x2713; Normal':'&#x26A0; Off'}</span>
-        </div>
+        <span style="font-size:11px;color:var(--mut);font-weight:700;letter-spacing:1px;text-transform:uppercase">Energy &#x2713;</span>
+        <span style="font-size:14px;font-weight:700">Energy <span style="color:${eCol}">${sym.energy}/5</span></span>
       </div>
     </div>`;
   }else{
     html+=`<div class="card warm" style="margin-bottom:10px">
-      <div class="cl">Daily health check</div><div class="ct" style="margin-bottom:12px">How are you today?</div>
-      <div style="margin-bottom:12px">
-        <div style="font-size:12px;color:var(--mut);margin-bottom:7px;font-weight:600;letter-spacing:1px;text-transform:uppercase">ENERGY</div>
-        <div style="display:flex;gap:5px">${[1,2,3,4,5].map(n=>{const s=sym.energy===n;const c=n>=4?'var(--grn)':n===3?'var(--amb)':'var(--red)';const bg=n>=4?'var(--gbg)':n===3?'var(--abg)':'var(--rbg)';return`<button class="sym-val-btn" onclick="logSym('energy',${n})" style="background:${s?bg:'var(--c2)'};color:${s?c:'var(--mut)'};border-color:${s?c:'var(--c3)'}">${n}</button>`;}).join('')}</div>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-top:3px"><span>Exhausted</span><span>Full power</span></div>
-      </div>
-      <div style="margin-bottom:12px">
-        <div style="font-size:12px;color:var(--mut);margin-bottom:7px;font-weight:600;letter-spacing:1px;text-transform:uppercase">SETON DISCOMFORT</div>
-        <div style="display:flex;gap:5px">${[1,2,3,4,5].map(n=>{const s=sym.seton===n;const c=n<=2?'var(--grn)':n===3?'var(--amb)':'var(--red)';const bg=n<=2?'var(--gbg)':n===3?'var(--abg)':'var(--rbg)';return`<button class="sym-val-btn" onclick="logSym('seton',${n})" style="background:${s?bg:'var(--c2)'};color:${s?c:'var(--mut)'};border-color:${s?c:'var(--c3)'}">${n}</button>`;}).join('')}</div>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-top:3px"><span>None</span><span>Painful</span></div>
-      </div>
-      <div>
-        <div style="font-size:12px;color:var(--mut);margin-bottom:7px;font-weight:600;letter-spacing:1px;text-transform:uppercase">BOWEL</div>
-        <div style="display:flex;gap:8px">
-          <button onclick="logSym('bowel','normal')" style="flex:1;padding:13px;border:1px solid ${sym.bowel==='normal'?'var(--gbr)':'var(--c3)'};border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;min-height:44px;background:${sym.bowel==='normal'?'var(--gbg)':'var(--c2)'};color:${sym.bowel==='normal'?'var(--grn)':'var(--mut)'};font-family:inherit">&#x2713; Normal</button>
-          <button onclick="logSym('bowel','off')" style="flex:1;padding:13px;border:1px solid ${sym.bowel==='off'?'var(--rbr)':'var(--c3)'};border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;min-height:44px;background:${sym.bowel==='off'?'var(--rbg)':'var(--c2)'};color:${sym.bowel==='off'?'var(--red)':'var(--mut)'};font-family:inherit">&#x26A0; Off</button>
-        </div>
-      </div>
+      <div class="cl">Quick check</div><div class="ct" style="margin-bottom:12px">How’s your energy today?</div>
+      <div style="display:flex;gap:5px">${[1,2,3,4,5].map(n=>{const c=n>=4?'var(--grn)':n===3?'var(--amb)':'var(--red)';const bg=n>=4?'var(--gbg)':n===3?'var(--abg)':'var(--rbg)';return`<button class="sym-val-btn" onclick="logSym('energy',${n})" style="background:var(--c2);color:var(--mut);border-color:var(--c3)">${n}</button>`;}).join('')}</div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-top:3px"><span>Wrecked</span><span>Full power</span></div>
     </div>`;
   }
 
@@ -1452,7 +1322,7 @@ function renderToday(){
   /* -- Skipped -- */
   else if(existing&&existing.skipped){
     html+=`<div class="card"><div class="ct" style="margin-bottom:8px">Skipped \u2014 ${existing.dl}</div>
-      <div class="nt ${existing.skipReason==='flare'?'ng':'na'}">${existing.skipReason==='flare'?'Flare day \u2014 right call. Not counted against your score.':existing.skipReason==='tired'?'Tired skip noted.':'Busy day.'}</div>
+      <div class="nt ${existing.skipReason==='sick'?'ng':'na'}">${existing.skipReason==='sick'?'Sick day \u2014 rest up. Not counted against your score.':existing.skipReason==='tired'?'Tired skip noted.':'Busy day.'}</div>
       <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:10px" onclick="unskipSession()">Remove skip</button>
     </div>`;
     showStickyBtn(false);
@@ -1464,7 +1334,7 @@ function renderToday(){
     html+=`<div class="card cyan">
       <div class="cl">${isFirstTime?'First session \u2014 choose where to start':'Choose your session today'}</div>
       <div class="ct" style="margin-bottom:4px">${isFirstTime?'Pick any session. The app tracks the sequence from here.':'What are you training today?'}</div>
-      <div class="cs" style="margin-bottom:14px">${isFirstTime?'Push \u2192 Pull \u2192 Legs \u2192 Upper \u2192 repeat':'Override the sequence any time. App remembers what you pick.'}</div>
+      <div class="cs" style="margin-bottom:14px">${isFirstTime?'Push \u2192 Pull \u2192 Legs \u2192 Cardio \u2192 repeat':'Override the sequence any time. App remembers what you pick.'}</div>
       ${DAYS.map((d,i)=>`<div class="sess-option${nextIdx!==null&&i===nextIdx?' suggested':''}" onclick="startSession(${i})">
         <div>
           <div style="font-size:17px;font-weight:700;font-family:'Barlow',sans-serif">${d.label}${nextIdx!==null&&i===nextIdx?' <span style="font-size:11px;color:var(--cyan)">\u2190 suggested</span>':''}</div>
@@ -1475,7 +1345,7 @@ function renderToday(){
       <div class="sess-option" style="border-top:1px dashed var(--c3);margin-top:6px;padding-top:14px" onclick="startFreeSession()">
         <div>
           <div style="font-size:17px;font-weight:700;font-family:'Barlow',sans-serif">Free session</div>
-          <div style="font-size:12px;color:var(--mut);margin-top:2px">Build your own combo \u2014 doesn't affect your Push/Pull/Legs/Upper sequence</div>
+          <div style="font-size:12px;color:var(--mut);margin-top:2px">Build your own combo \u2014 doesn't affect your Push/Pull/Legs/Cardio sequence</div>
         </div>
         <div style="color:var(--cyan);font-size:22px">&#x203A;</div>
       </div>
@@ -1496,8 +1366,8 @@ function renderToday(){
     const hasDraft=!!lsG('ws_draft:'+todayKey());
     if(sym.energy&&sym.energy<=2){
       html+=`<div class="card na" style="margin-bottom:10px;border-left:3px solid var(--amb)">
-        <div class="cl" style="color:var(--amb)">Energy ${sym.energy}/5 \u2014 Amber protocol applies</div>
-        <div style="font-size:13px;line-height:1.5;margin-top:4px">Drop weight 20%, cut 1 set per exercise, rest 2\u20133 min. Leave before exhaustion. Full guide: Flare tab.</div>
+        <div class="cl" style="color:var(--amb)">Energy ${sym.energy}/5 \u2014 take it easier today</div>
+        <div style="font-size:13px;line-height:1.5;margin-top:4px">Drop load ~20%, cut a set if needed, longer rests. Or switch to Cardio + core.</div>
       </div>`;
     }
 
@@ -1529,7 +1399,7 @@ function renderToday(){
       const subWlabel=subOverride?.wlabel||((!chosenOpt&&ex.name!==ex.origName)?inferSubWlabel(ex.name):null);
       const effType=chosenOpt?chosenOpt.inputType:(subOverride?subOverride.inputType:(orig.inputType||'weight'));
       const effR=chosenOpt?chosenOpt.r:orig.r;
-      const fmtBest=(b)=>!b?'':(effType==='seconds'?b.w+'s':effType==='reps_each'?b.w+' each side':b.w+'kg \u00d7 '+b.r);
+      const fmtBest=(b)=>!b?'':(effType==='seconds'?b.w+((subWlabel||orig.wlabel||'').toLowerCase().includes('min')?' min':'s'):effType==='reps_each'?b.w+' each side':b.w+'kg \u00d7 '+b.r);
       const histFall=(!lx?.best)?(getExHistory(trackName).slice(-1)[0]||null):null;
       const lstr=lx?.best?'Last: '+fmtBest(lx.best):histFall?'Last ('+histFall.date.slice(5)+'): '+fmtBest(histFall.best):'First time';
       const effOrigLike=chosenOpt?{...orig,...chosenOpt,noweight:true}:(subOverride?{...orig,...subOverride}:orig);
@@ -1576,8 +1446,8 @@ function renderToday(){
           h+=`<div class="srow${set.done?' setdone':''}${isDrop?' droprow':''}"${si===ex.sets.length-1&&!subOpen?' style="border-bottom:none"':''}>
             <div class="snum">${isDrop?`S${si+1}<span class="dbadge">DROP</span>`:`S${si+1}`}${isExtra?`<button class="setdel" onclick="removeSet('${gd.label}',${ei},${si})" title="Remove this set">&#x2715;</button>`:''}</div>
             <div style="text-align:center;flex:1">
-              <input class="nin" type="number" inputmode="decimal" placeholder="${effType==='seconds'?'sec':effType==='reps_each'?'reps':'kg'}" min="0" step="${effType==='weight'?0.5:1}" value="${set.w}" oninput="updSet('${gd.label}',${ei},${si},'w',this.value)">
-              <div class="nin-lbl">${effType==='seconds'?'sec':effType==='reps_each'?'/side':'kg'}</div>
+              <input class="nin" type="number" inputmode="decimal" placeholder="${effType==='seconds'?((subWlabel||orig.wlabel||'').toLowerCase().includes('min')?'min':'sec'):effType==='reps_each'?'reps':'kg'}" min="0" step="${effType==='weight'?0.5:1}" value="${set.w}" oninput="updSet('${gd.label}',${ei},${si},'w',this.value)">
+              <div class="nin-lbl">${effType==='seconds'?((subWlabel||orig.wlabel||'').toLowerCase().includes('min')?'min':'sec'):effType==='reps_each'?'/side':'kg'}</div>
             </div>
             ${(effType!=='seconds'&&effType!=='reps_each')?`<span class="tx">&times;</span><div style="text-align:center;flex:1"><input class="nin" type="number" inputmode="numeric" placeholder="reps" min="0" step="1" value="${set.r}" oninput="updSet('${gd.label}',${ei},${si},'r',this.value)"><div class="nin-lbl">reps</div></div>`:''}
             <button class="dbtn${set.done?' dk':''}" onclick="togDone('${gd.label}',${ei},${si})">${set.done?'&#x2713;':'&#x25CB;'}</button>
@@ -1654,7 +1524,7 @@ function renderToday(){
       <div style="font-size:11px;color:var(--mut);margin-bottom:6px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Session notes</div>
       <textarea class="genin" rows="2" placeholder="e.g. felt strong, good energy..." oninput="if(WS['${gd.label}']){WS['${gd.label}'].note=this.value;saveDraft('${gd.label}')}">${escHtml(ws.note)}</textarea>
       <div style="font-size:11px;color:var(--mut);margin:10px 0 6px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Pain / joint (optional)</div>
-      <textarea class="genin" rows="1" placeholder="e.g. shoulder twinge on bench, left knee..." oninput="if(WS['${gd.label}']){WS['${gd.label}'].painNote=this.value;saveDraft('${gd.label}')}">${escHtml(ws.painNote)}</textarea>
+      <textarea class="genin" rows="1" placeholder="e.g. shoulder twinge, left knee..." oninput="if(WS['${gd.label}']){WS['${gd.label}'].painNote=this.value;saveDraft('${gd.label}')}">${escHtml(ws.painNote)}</textarea>
       <div style="display:flex;justify-content:space-between;margin:12px 0 5px">
         <div style="font-size:13px;color:var(--red);font-weight:700">Must: ${mustDone}/${mustList.length} done</div>
         <div style="font-size:13px;color:var(--dim);font-weight:700">Optional: ${optDone}/${optList.length} done</div>
@@ -1665,7 +1535,7 @@ function renderToday(){
     <button class="btn btn-ghost" onclick="document.getElementById('skipsheet').style.display='block'" style="margin-top:6px">Skip today</button>
     <div class="skipsheet" id="skipsheet">
       <div style="font-size:14px;font-weight:700;margin-bottom:12px;color:var(--mut)">Why skipping?</div>
-      <button class="skipopt" onclick="skipSession('flare')">Flare day</button>
+      <button class="skipopt" onclick="skipSession('sick')">Sick / injured</button>
       <button class="skipopt" onclick="skipSession('tired')">Too tired</button>
       <button class="skipopt" onclick="skipSession('busy')">Too busy</button>
       <button class="skipopt" style="color:var(--mut);font-weight:500" onclick="document.getElementById('skipsheet').style.display='none'">Cancel</button>
@@ -1915,7 +1785,7 @@ function saveMeasurements(){
 function allFoods(){const c=lsG('custom_foods')||[];return[...FOODS,...c.map(f=>({...f,cat:'My foods'}))];}
 function foodOptsHtml(){
   const cats={};allFoods().forEach(f=>{if(!cats[f.cat])cats[f.cat]=[];cats[f.cat].push(f);});
-  return Object.entries(cats).map(([cat,items])=>`<optgroup label="${cat}">${items.map(f=>`<option value="${f.name}">${f.name}${f.fibreRisk?' \u26A0':''}${f.lbl?' ('+f.lbl+')':''}</option>`).join('')}</optgroup>`).join('');
+  return Object.entries(cats).map(([cat,items])=>`<optgroup label="${cat}">${items.map(f=>`<option value="${f.name}">${f.name}${f.lbl?' ('+f.lbl+')':''}</option>`).join('')}</optgroup>`).join('');
 }
 /* Unit-aware amount handling. 'g' and 'ml' foods are entered as a direct amount
    (prefilled to the food's typical serving, editable). 'piece'/'tsp'/'scoop' foods
@@ -1980,7 +1850,7 @@ function renderFood(){
   <!-- COOK: portion calculator -->
   <div id="fs-c" style="display:none">
     <div class="card"><div class="cl">Plan what to cook</div><div class="ct" style="margin-bottom:4px">How much to buy + macros per plate</div>
-      <div class="cs" style="margin-bottom:12px">For you and your wife across multiple meals</div>
+      <div class="cs" style="margin-bottom:12px">Meal prep across multiple portions</div>
       <select class="foodsel" id="pg-food">${opts}</select>
       <div class="statrow"><div style="font-size:13px;color:var(--mut);font-weight:500">Number of meals</div>
         <select class="sinput" id="pg-meals" style="width:64px">${[1,2,3,4,5].map(n=>`<option${n===3?' selected':''}>${n}</option>`).join('')}</select>
@@ -1991,10 +1861,10 @@ function renderFood(){
           <option value="200">Large (~200g)</option><option value="250">XL (~250g)</option>
         </select>
       </div>
-      <div class="statrow"><div style="font-size:13px;color:var(--mut);font-weight:500">Second plate (wife)</div>
+      <div class="statrow"><div style="font-size:13px;color:var(--mut);font-weight:500">Extra plate (optional)</div>
         <select class="sinput" id="pg-wife" style="width:140px">
-          <option value="0">No second plate</option><option value="70">Small (~70g)</option>
-          <option value="90" selected>Medium (~90g)</option><option value="120">Large (~120g)</option>
+          <option value="0" selected>Just mine</option><option value="100">Small (~100g)</option>
+          <option value="150">Medium (~150g)</option><option value="200">Large (~200g)</option>
         </select>
       </div>
       <button class="btn btn-amb" onclick="calcPortions()">Calculate</button>
@@ -2005,7 +1875,7 @@ function renderFood(){
     <div class="card" style="margin-top:12px">
       <div class="cl">Batch share calculator</div>
       <div class="ct" style="margin-bottom:4px">Cooked for two? Split the macros.</div>
-      <div class="cs" style="margin-bottom:12px">e.g. made goreng for you and your partner &mdash; enter total batch weight and your share.</div>
+      <div class="cs" style="margin-bottom:12px">Made a big batch? Enter total cooked weight and your share.</div>
       <select class="foodsel" id="bs-food">${opts}</select>
       <div class="statrow" style="margin-top:8px">
         <div style="font-size:13px;color:var(--mut);font-weight:500">Total batch (g)</div>
@@ -2013,7 +1883,7 @@ function renderFood(){
       </div>
       <div class="statrow">
         <div style="font-size:13px;color:var(--mut);font-weight:500">Your share (%)</div>
-        <input class="sinput" id="bs-pct" type="number" inputmode="decimal" placeholder="60" value="60" min="1" max="100" style="width:90px;text-align:center">
+        <input class="sinput" id="bs-pct" type="number" inputmode="decimal" placeholder="60" value="100" min="1" max="100" style="width:90px;text-align:center">
       </div>
       <button class="btn btn-amb" onclick="calcBatchShare()">Calculate my portion</button>
       <div id="bs-result"></div>
@@ -2023,7 +1893,7 @@ function renderFood(){
 
   <!-- PLATE BUILDER -->
   <div id="fs-pl" style="display:none">
-    <div class="card"><div class="cl">Build a Tamil plate</div><div class="ct" style="margin-bottom:4px">Rice + rasam/curry + protein + side</div>
+    <div class="card"><div class="cl">Build a plate</div><div class="ct" style="margin-bottom:4px">Base + sauce + protein + side</div>
       <div class="cs" style="margin-bottom:14px">Pick each component. Combined macros calculated instantly.</div>
       <div style="font-size:12px;color:var(--mut);margin-bottom:8px;font-weight:600;letter-spacing:1px;text-transform:uppercase">Meal type</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
@@ -2036,7 +1906,7 @@ function renderFood(){
           <div style="font-size:12px;color:var(--mut);font-weight:600" id="pc-base-u">g</div>
         </div>
       </div>
-      <div class="plate-comp"><div class="plate-comp-lbl">Liquid (rasam / sambar / curry)</div>
+      <div class="plate-comp"><div class="plate-comp-lbl">Sauce / liquid</div>
         <div class="plate-row">
           <select class="foodsel" id="pc-liq" style="flex:1;margin-bottom:0" onchange="pcPrefill('liq')">${opts}</select>
           <input class="sinput" id="pc-liq-amt" type="number" inputmode="decimal" value="200" placeholder="200" step="0.5" style="width:70px;text-align:center" oninput="buildPlate()">
@@ -2050,7 +1920,7 @@ function renderFood(){
           <div style="font-size:12px;color:var(--mut);font-weight:600" id="pc-pro-u">g</div>
         </div>
       </div>
-      <div class="plate-comp"><div class="plate-comp-lbl">Side (beans fry / potato fry)</div>
+      <div class="plate-comp"><div class="plate-comp-lbl">Side / veg</div>
         <div class="plate-row">
           <select class="foodsel" id="pc-side" style="flex:1;margin-bottom:0" onchange="pcPrefill('side')"><option value="">None</option>${opts}</select>
           <input class="sinput" id="pc-side-amt" type="number" inputmode="decimal" value="100" placeholder="100" step="0.5" style="width:70px;text-align:center" oninput="buildPlate()">
@@ -2078,7 +1948,7 @@ function renderFood(){
         </div>
         <div style="text-align:right">
           <div style="font-size:13px;font-weight:700;color:var(--mut);letter-spacing:.5px;text-transform:uppercase;margin-bottom:2px">Kcal</div>
-          <div style="font-size:20px;font-weight:800;font-family:'Barlow',sans-serif;color:var(--cyan)">${totalK}<span style="font-size:11px;font-weight:400;color:var(--mut)"> / 2100</span></div>
+          <div style="font-size:20px;font-weight:800;font-family:'Barlow',sans-serif;color:var(--cyan)">${totalK}<span style="font-size:11px;font-weight:400;color:var(--mut)"> / ${t.kcal}</span></div>
         </div>
       </div>
       <div class="prog-bar" style="margin-bottom:4px"><div class="prog-fill" style="width:${Math.min(totalP/t.protein*100,100)}%;background:${totalP>=t.protein?'var(--grn)':totalP>=t.protein*0.67?'var(--cyan)':'var(--red)'}"></div></div>
@@ -2099,7 +1969,7 @@ function renderFood(){
       <input class="genin" type="text" id="ml-food-search" placeholder="Search foods..." autocomplete="off" oninput="filterMealFoodList(this.value)" onfocus="filterMealFoodList(this.value)">
       <input type="hidden" id="ml-food">
       <div id="ml-food-list" style="max-height:180px;overflow-y:auto;display:none;background:var(--c2);border:1px solid var(--c3);border-radius:10px;margin-top:4px">
-        ${allFoods().map(f=>`<div class="free-ex-row" data-name="${f.name.toLowerCase()}" onclick="pickMealFood('${f.name.replace(/'/g,"\\'")}')"><span>${f.name}${f.fibreRisk?' &#x26A0;':''}${f.lbl?` <span style="color:var(--dim);font-size:11px">(${f.lbl})</span>`:''}</span></div>`).join('')}
+        ${allFoods().map(f=>`<div class="free-ex-row" data-name="${f.name.toLowerCase()}" onclick="pickMealFood('${f.name.replace(/'/g,"\\'")}')"><span>${f.name}${f.lbl?` <span style="color:var(--dim);font-size:11px">(${f.lbl})</span>`:''}</span></div>`).join('')}
       </div>
       <div class="statrow" style="margin-bottom:4px">
         <div style="font-size:13px;color:var(--mut);font-weight:500" id="ml-amt-lbl">Amount (g)</div>
@@ -2116,7 +1986,7 @@ function renderFood(){
   <div id="fs-f" style="display:none">
     <div class="card"><div class="cl">Manage food list</div><div class="ct" style="margin-bottom:4px">Add foods you eat regularly</div>
       <div class="cs" style="margin-bottom:12px">Appears in all tabs permanently</div>
-      <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">Food name</div><input class="sinput" id="cf-n" type="text" placeholder="Kothu roti" style="width:110px"></div>
+      <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">Food name</div><input class="sinput" id="cf-n" type="text" placeholder="HF Chicken Pasta" style="width:110px"></div>
       <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">Logged as</div>
         <select class="sinput" id="cf-unit" style="width:110px" onchange="cfUnitChanged()">
           <option value="g">Grams</option>
@@ -2232,13 +2102,8 @@ function pcPrefill(comp){
   if(uEl)uEl.textContent=isCountUnit(food.unit)?unitWord(food.unit):(food.unit||'g');
   buildPlate();
 }
-function isSymptomDay(){const sym=lsG('sym:'+todayKey())||{};return(sym.bowel&&sym.bowel!=='normal')||(sym.seton&&sym.seton>=4)||(sym.energy&&sym.energy<=2);}
-function fibreWarnHTML(names){
-  const risky=(Array.isArray(names)?names:[names]).filter(n=>{const f=allFoods().find(x=>x.name===n);return f&&f.fibreRisk;});
-  if(!risky.length)return'';
-  const symToday=isSymptomDay();
-  return`<div class="nt ${symToday?'nr':'na'}" style="margin-top:6px">&#x26A0; ${risky.join(', ')}: high-fibre legume \u2014 obstruction risk with strictures.${symToday?' Symptoms logged today \u2014 consider a lower-fibre swap (poriyal, curd rice).':' Fine on green days; go easy during flares.'}</div>`;
-}
+function isSymptomDay(){const sym=lsG('sym:'+todayKey())||{};return !!(sym.energy&&sym.energy<=2);}
+function fibreWarnHTML(names){return '';}
 function addPlateToLog(){
   const r=computePlate();
   if(!r.names.length)return;
@@ -2310,13 +2175,15 @@ function removeMeal(i){
 }
 function quickLog(fname,amt){
   const food=allFoods().find(f=>f.name===fname);if(!food)return;
+  if(amt==null||amt==='')amt=food.typ||100;
   const now=new Date();const time=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
   const logAmt=isCountUnit(food.unit)?+(amt/(food.typ||100)).toFixed(2):amt;
   const m=foodMacros(food,logAmt);
   const log=lsG('food:'+todayKey())||[];
   log.push({name:food.name,amt:logAmt,unit:unitWord(food.unit),k:m.k,p:m.p,c:m.c,f:m.f,mealType:curQuickMeal,time});
   lsS('food:'+todayKey(),log);updateHeader();
-  document.getElementById('pg-result').innerHTML+=`<div class="nt ng">Logged to Ate &#x2713;</div>`+fibreWarnHTML(food.name);
+  const pg=document.getElementById('pg-result');
+  if(pg)pg.innerHTML+=`<div class="nt ng">Logged to Ate &#x2713;</div>`;
 }
 function calcBatchShare(){
   const fname=document.getElementById('bs-food').value;
@@ -2609,7 +2476,7 @@ function getFoodSymptomCorrelation(){
     const sym=lsG('sym:'+date);
     if(!food||!food.length||!sym||!sym.energy)continue;
     const totalP=food.reduce((s,it)=>s+(it.p||0),0);
-    days.push({date,protein:totalP,energy:sym.energy,seton:sym.seton,bowelOff:sym.bowel&&sym.bowel!=='normal'});
+    days.push({date,protein:totalP,energy:sym.energy});
   }
   if(days.length<10)return{available:false,sampleSize:days.length,reason:'Only '+days.length+' day(s) with both food and symptom logs \u2014 need at least 10 to say anything real.'};
   const sorted=[...days].sort((a,b)=>a.protein-b.protein);
@@ -2681,20 +2548,17 @@ function renderHistory(){
       ${recents.map(s=>`<div class="hitem"><div style="display:flex;justify-content:space-between;align-items:center">
         <div><div style="font-size:15px;font-weight:700;font-family:'Barlow',sans-serif">${s.date}${s.duration?' <span style="font-size:12px;color:var(--dim);font-family:\'IBM Plex Sans\',sans-serif">'+s.duration+'m</span>':''}</div>
         <div style="font-size:13px;color:var(--mut)">${s.dl}${s.newPRs&&s.newPRs.length?' &#x2605;':''}</div></div>
-        <div class="pill ${s.skipped?(s.skipReason==='flare'?'pr':'pa'):'pg'}">${s.skipped?(s.skipReason==='flare'?'Flare':s.skipReason==='tired'?'Tired':'Busy'):'Done &#x2713;'}</div>
+        <div class="pill ${s.skipped?(s.skipReason==='sick'?'pr':'pa'):'pg'}">${s.skipped?(s.skipReason==='sick'?'Sick':s.skipReason==='tired'?'Tired':'Busy'):'Done &#x2713;'}</div>
       </div>${s.note?`<div style="font-size:12px;color:var(--dim);margin-top:4px;font-style:italic">"${escHtml(s.note)}"</div>`:''}</div>`).join('')}
     </div>`;
   }
 
   const symH=[];for(let d=0;d<7;d++){const dt=new Date(now);dt.setDate(dt.getDate()-d);const s=lsG('sym:'+dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'));if(s&&s.energy)symH.push(s);}
   if(symH.length){
-    html+=`<div class="card"><div class="cl">Health log &mdash; 7 days</div><div class="ct" style="margin-bottom:10px">Show to your gastroenterologist</div>
+    html+=`<div class="card"><div class="cl">Energy log &mdash; 7 days</div><div class="ct" style="margin-bottom:10px">How you felt before training</div>
       ${symH.map(s=>`<div class="hitem"><div style="display:flex;justify-content:space-between;align-items:center">
         <div style="font-size:13px;color:var(--mut);font-weight:500">${s.date}</div>
-        <div style="display:flex;gap:14px;font-size:13px;font-weight:700">
-          <span>Energy ${s.energy||'&mdash;'}/5</span><span>Seton ${s.seton||'&mdash;'}/5</span>
-          <span style="color:${s.bowel==='normal'?'var(--grn)':s.bowel?'var(--red)':'var(--dim)'}">${s.bowel==='normal'?'&#x2713;':'off'}</span>
-        </div>
+        <div style="font-size:13px;font-weight:700">Energy ${s.energy||'&mdash;'}/5</div>
       </div></div>`).join('')}
     </div>`;
   }
@@ -2764,7 +2628,7 @@ function renderHistory(){
   html+=`<div class="card">
     <div class="cl">Exercise history</div>
     <div class="ct" style="margin-bottom:10px">Search any exercise &mdash; every session, best set, PRs</div>
-    <input class="ex-search" type="text" id="ex-search-input" placeholder="e.g. Pull-ups, Bench press..." oninput="searchExHistory(this.value)">
+    <input class="ex-search" type="text" id="ex-search-input" placeholder="e.g. Leg press, Pull-ups..." oninput="searchExHistory(this.value)">
     <div id="ex-history-result">
       <div style="display:flex;flex-wrap:wrap;gap:6px">
         ${[...allExNames].slice(0,12).map(n=>`<button onclick="document.getElementById('ex-search-input').value='${n}';searchExHistory('${n}')" style="padding:6px 12px;border:1px solid var(--c3);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;background:var(--c2);color:var(--mut);font-family:inherit">${n}</button>`).join('')}
@@ -2882,23 +2746,145 @@ function searchExHistory(query){
   el.innerHTML=html||`<div style="font-size:13px;color:var(--dim);padding:8px">No data logged for "${query}" yet</div>`;
 }
 
-/* ===== FLARE GUIDE ===== */
-function renderFlare(){
-  const t=[
-    {col:'var(--grn)',bg:'ng',label:'Green \u2014 train as planned',signs:['Normal energy','No pain beyond baseline','Normal bowel habits','No fever or chills','Seton: normal drainage'],action:'Full session. Stick to the plan.'},
-    {col:'var(--amb)',bg:'na',label:'Amber \u2014 modified session',signs:['More tired than usual','Mild bloating or cramps','Energy 60\u201370% of normal','Seton slightly more uncomfortable','Bowel habits slightly off'],action:'Drop weight 20%, cut 1 set per exercise, rest 2\u20133 min. Leave before exhaustion.'},
-    {col:'var(--red)',bg:'nr',label:'Red \u2014 rest today. No gym.',signs:['Cannot imagine exercising','Abdominal pain or cramping','Fever even 37.5\u00b0C+','Increased seton discharge or pain','More frequent or loose stools','Joint aches flaring'],action:'Rest, hydrate, eat gentle. One red day does not break progress.'}
-  ];
-  document.getElementById('p4').innerHTML=
-    `<p style="font-size:14px;color:var(--mut);line-height:1.6;margin-bottom:14px">Check this before every session. 30 seconds. Non-negotiable while pre-biologic.</p>`+
-    t.map(x=>`<div class="card" style="border-color:${x.col};margin-bottom:12px">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px"><div class="dot" style="background:${x.col}"></div><div style="font-size:17px;font-weight:700;font-family:'Barlow',sans-serif">${x.label}</div></div>
-      <div style="font-size:14px;color:var(--mut);line-height:1.9">${x.signs.join('<br>')}</div>
-      <div class="nt ${x.bg}">${x.action}</div>
-    </div>`).join('')+
-    `<div class="card warm"><div style="font-size:14px;font-weight:700;font-family:'Barlow',sans-serif;margin-bottom:8px">Pre-biologic reality</div>
-    <div style="font-size:14px;color:var(--mut);line-height:1.7">Active inflammation means your body is spending energy on disease \u2014 not weakness. Once infliximab starts working (6\u201314 weeks post first infusion), energy and recovery improve significantly. Train smart until then.</div></div>`;
+/* ===== RECIPES (photo label → saved food) ===== */
+let _recipePhotoData=null;
+function compressImageFile(file,maxW,quality){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    const url=URL.createObjectURL(file);
+    img.onload=()=>{
+      const scale=Math.min(1,maxW/img.width);
+      const w=Math.round(img.width*scale),h=Math.round(img.height*scale);
+      const c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL('image/jpeg',quality));
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Could not read image'));};
+    img.src=url;
+  });
 }
+async function onRecipePhotoSelected(input){
+  const file=input.files&&input.files[0];if(!file)return;
+  try{
+    _recipePhotoData=await compressImageFile(file,900,0.72);
+    const prev=document.getElementById('recipe-photo-preview');
+    if(prev)prev.innerHTML=`<img src="${_recipePhotoData}" alt="Label preview" style="width:100%;border-radius:12px;border:1px solid var(--c3);margin-top:8px">`;
+  }catch(e){alert('Could not load that photo.');_recipePhotoData=null;}
+}
+function recipeModeChanged(){
+  const mode=document.getElementById('rc-mode')?.value||'serving';
+  const hint=document.getElementById('rc-mode-hint');
+  if(hint)hint.textContent=mode==='per100'
+    ?'Enter values exactly as printed per 100g / 100ml.'
+    :'Enter values for one serving / one pack, then set the serving weight below.';
+  ['rc-k','rc-p','rc-c','rc-f'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    const row=el.closest('.statrow');
+    if(!row)return;
+    const lbl=row.querySelector('div');
+    if(!lbl)return;
+    const base=id==='rc-k'?'Calories':id==='rc-p'?'Protein (g)':id==='rc-c'?'Carbs (g)':'Fat (g)';
+    lbl.textContent=mode==='per100'?base+' / 100g':base+' / serving';
+  });
+}
+function saveRecipeFromPhoto(){
+  const name=(document.getElementById('rc-n')?.value||'').trim();
+  const mode=document.getElementById('rc-mode')?.value||'serving';
+  const cat=document.getElementById('rc-cat')?.value||'My recipes';
+  const unit=document.getElementById('rc-unit')?.value||'g';
+  let k=parseFloat(document.getElementById('rc-k')?.value);
+  let p=parseFloat(document.getElementById('rc-p')?.value);
+  let c=parseFloat(document.getElementById('rc-c')?.value)||0;
+  let f=parseFloat(document.getElementById('rc-f')?.value)||0;
+  const servingG=parseFloat(document.getElementById('rc-serving')?.value)||100;
+  if(!name){alert('Give the recipe a name.');return;}
+  if(!k&&k!==0||!p&&p!==0){alert('Enter calories and protein from the label.');return;}
+  if(mode==='serving'){
+    if(!servingG||servingG<=0){alert('Enter the serving weight in grams (or ml).');return;}
+    k=k*100/servingG;p=p*100/servingG;c=c*100/servingG;f=f*100/servingG;
+  }
+  if(allFoods().find(x=>x.name.toLowerCase()===name.toLowerCase())){
+    alert('That name already exists — pick a different name.');return;
+  }
+  const food={name,cat,per100:{k:Math.round(k*10)/10,p:Math.round(p*10)/10,c:Math.round(c*10)/10,f:Math.round(f*10)/10},typ:mode==='serving'?servingG:100,lbl:'Saved from label photo',fromRecipe:true};
+  if(unit!=='g')food.unit=unit;
+  if(_recipePhotoData)food.photo=_recipePhotoData;
+  const customs=lsG('custom_foods')||[];
+  customs.push(food);lsS('custom_foods',customs);
+  _recipePhotoData=null;
+  const conf=document.getElementById('rc-conf');
+  if(conf){conf.style.display='block';setTimeout(()=>{conf.style.display='none';},2000);}
+  renderRecipes();
+}
+function deleteRecipeFood(i){
+  if(!confirm('Delete this saved recipe?'))return;
+  const c=lsG('custom_foods')||[];
+  c.splice(i,1);lsS('custom_foods',c);renderRecipes();
+}
+function renderRecipes(){
+  const customs=lsG('custom_foods')||[];
+  const recipes=customs.map((f,i)=>({...f,i})).filter(f=>f.fromRecipe||f.photo||f.cat==='My recipes'||f.cat==='Supplements');
+  const list=customs.length?customs.map((f,i)=>`<div style="padding:12px 0;border-bottom:1px solid var(--c3)">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:700;font-family:'Barlow',sans-serif">${escHtml(f.name)}</div>
+          <div style="font-size:12px;color:var(--mut);margin-top:3px">${f.cat||'My foods'} · ${f.per100.k} kcal · ${f.per100.p}g P / 100g</div>
+          ${f.lbl?`<div style="font-size:11px;color:var(--dim);margin-top:2px">${escHtml(f.lbl)}</div>`:''}
+        </div>
+        <button onclick="deleteRecipeFood(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:22px;padding:6px;min-width:44px;min-height:44px">&times;</button>
+      </div>
+      ${f.photo?`<img src="${f.photo}" alt="" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;margin-top:8px;border:1px solid var(--c3)">`:''}
+      <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="quickLog('${f.name.replace(/'/g,"\\'")}');document.querySelectorAll('.tab')[2].click()">+ Log now</button>
+    </div>`).join(''):`<div style="font-size:13px;color:var(--dim);padding:8px 0">No saved recipes yet — snap a HelloFresh pack or supplement label above.</div>`;
+
+  document.getElementById('p4').innerHTML=`
+  <div class="card cyan" style="margin-bottom:12px">
+    <div class="cl">Photo → recipe</div>
+    <div class="ct" style="margin-bottom:4px">Save a nutrition label once, reuse forever</div>
+    <div class="cs" style="margin-bottom:12px">Built for HelloFresh packs, protein tubs, and anything with a macro panel. Photo is kept as a reference — you type the numbers from the label.</div>
+    <input type="file" id="rc-photo" accept="image/*" capture="environment" style="display:none" onchange="onRecipePhotoSelected(this)">
+    <button class="btn btn-cyan" onclick="document.getElementById('rc-photo').click()">Take / upload label photo</button>
+    <div id="recipe-photo-preview"></div>
+    <div class="sep"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">Recipe name</div><input class="sinput" id="rc-n" type="text" placeholder="HF Chicken Pasta" style="width:140px"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">Category</div>
+      <select class="sinput" id="rc-cat" style="width:140px">
+        <option value="My recipes">My recipes</option>
+        <option value="HelloFresh">HelloFresh</option>
+        <option value="Supplements">Supplements</option>
+        <option value="Takeaway">Takeaway</option>
+      </select>
+    </div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">Label shows</div>
+      <select class="sinput" id="rc-mode" style="width:140px" onchange="recipeModeChanged()">
+        <option value="serving">Per serving / pack</option>
+        <option value="per100">Per 100g / 100ml</option>
+      </select>
+    </div>
+    <div id="rc-mode-hint" style="font-size:11px;color:var(--dim);margin:4px 0 8px">Enter values for one serving / one pack, then set the serving weight below.</div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">Calories / serving</div><input class="sinput" id="rc-k" type="number" inputmode="decimal" placeholder="520" style="width:110px"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">Protein (g) / serving</div><input class="sinput" id="rc-p" type="number" inputmode="decimal" placeholder="35" style="width:110px"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">Carbs (g) / serving</div><input class="sinput" id="rc-c" type="number" inputmode="decimal" placeholder="45" style="width:110px"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">Fat (g) / serving</div><input class="sinput" id="rc-f" type="number" inputmode="decimal" placeholder="18" style="width:110px"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">Serving weight</div><input class="sinput" id="rc-serving" type="number" inputmode="decimal" placeholder="400" value="400" style="width:110px"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">Logged as</div>
+      <select class="sinput" id="rc-unit" style="width:110px">
+        <option value="g">Grams</option>
+        <option value="ml">Millilitres</option>
+        <option value="piece">Whole pack / piece</option>
+        <option value="scoop">Scoop</option>
+      </select>
+    </div>
+    <button class="btn btn-amb" onclick="saveRecipeFromPhoto()">Save recipe</button>
+    <div id="rc-conf" class="confbox">Recipe saved — it now appears in Food quick-add &#x2713;</div>
+  </div>
+  <div class="card">
+    <div class="cl">Saved recipes &amp; supplements (${customs.length})</div>
+    ${list}
+  </div>`;
+}
+
 
 /* ===== TABS + INIT ===== */
 document.querySelectorAll('.tab').forEach(btn=>{
@@ -2912,6 +2898,7 @@ document.querySelectorAll('.tab').forEach(btn=>{
     if(t===1)renderProgress();
     if(t===2)renderFood();
     if(t===3)renderHistory();
+    if(t===4)renderRecipes();
   });
 });
 
@@ -2942,13 +2929,13 @@ if(!Data.session.get()){
     }
   }
 }
-document.getElementById('hsub').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long'})+' \u00b7 Target 80\u201385kg at 14\u201316% BF';
+document.getElementById('hsub').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long'})+' \u00b7 Recomp: lower BF, add muscle (71kg \u00b7 20% BF)';
 if(navigator.storage&&navigator.storage.persist){
   (async()=>{try{const granted=await navigator.storage.persist();lsS('storage_persisted',granted);}catch{lsS('storage_persisted',false);}})();
 }
 updateHeader();
 renderToday();
-renderFlare();
+renderRecipes();
 </script>
 </body>
 </html>
