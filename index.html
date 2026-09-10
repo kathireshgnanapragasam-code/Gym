@@ -456,9 +456,39 @@ function saveBarWeight(){
 function lsDel(k){try{localStorage.removeItem(k);}catch{}}
 function todayKey(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function yesterdayKey(){const d=new Date();d.setDate(d.getDate()-1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
-function monthKey(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+function formatDateKey(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function parseDateKey(k){const p=(k||todayKey()).split('-').map(Number);return new Date(p[0],p[1]-1,p[2]);}
+function monthKeyFor(dateKey){return(dateKey||todayKey()).slice(0,7);}
+function monthKey(){return monthKeyFor(todayKey());}
 function prevMonthKey(){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
 function mergedMlog(){return{...(lsG('mlog:'+prevMonthKey())||{}),...(lsG('mlog:'+monthKey())||{})};}
+/* Workout log date — can be today or a past day when catching up. */
+let _logDateKey=null;
+function activeDateKey(){return _logDateKey||todayKey();}
+function isLoggingToday(){return activeDateKey()===todayKey();}
+function setLogDate(key){
+  if(!key)return;
+  const max=todayKey();
+  if(key>max)key=max;
+  if(key===activeDateKey())return;
+  _logDateKey=key===max?null:key;
+  WS={};adHocDay=null;adHocSeqIdx=null;_forcePickerOnce=false;
+  showStickyBtn(false);stopTimerTick();
+  renderToday();
+}
+function shiftLogDate(delta){
+  const d=parseDateKey(activeDateKey());
+  d.setDate(d.getDate()+delta);
+  setLogDate(formatDateKey(d));
+}
+function fmtLogDateLabel(key){
+  const d=parseDateKey(key);
+  const today=todayKey();
+  const y=yesterdayKey();
+  if(key===today)return'Today';
+  if(key===y)return'Yesterday';
+  return d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+}
 function checkStorage(){try{localStorage.setItem('__t__','1');localStorage.removeItem('__t__');}catch{document.getElementById('warn-banner').style.display='block';}}
 
 /* ===== BODY DIAGRAM (body-muscles library integration) =====
@@ -671,7 +701,7 @@ function mountMiniExerciseDiagram(orig){
 const Data={
   pr:{
     get(name){return lsG('pr:'+name);},
-    set(name,best){return lsS('pr:'+name,{w:best.w,r:best.r,date:todayKey()});},
+    set(name,best){return lsS('pr:'+name,{w:best.w,r:best.r,date:activeDateKey()});},
     clearAll(){
       for(let i=localStorage.length-1;i>=0;i--){
         const k=localStorage.key(i);
@@ -687,7 +717,7 @@ const Data={
     setLast(dl,data){return lsS('last:'+dl,data);}
   },
   draft:{
-    save(dl,state){return lsS('ws_draft:'+todayKey(),{dl,state,date:todayKey()});},
+    save(dl,state){const dk=activeDateKey();return lsS('ws_draft:'+dk,{dl,state,date:dk});},
     findAny(){
       for(let i=0;i<localStorage.length;i++){
         const k=localStorage.key(i);
@@ -1094,20 +1124,24 @@ function saveSession(dl,seqIdx){
   });
   const totalVolume=exercises.reduce((v,e)=>v+(e.exVolume||0),0);
   const isFree=seqIdx==='free';
-  const session={date:todayKey(),dl,seqIdx:isFree?null:seqIdx,exercises,note:s.note,painNote:s.painNote||'',skipped:false,duration,newPRs,totalVolume};
-  Data.session.set(session);
-  Data.session.setLast(dl,{date:todayKey(),exercises});
-  if(!isFree)lsS('last_seq_idx',seqIdx);
+  const dk=activeDateKey();
+  const session={date:dk,dl,seqIdx:isFree?null:seqIdx,exercises,note:s.note,painNote:s.painNote||'',skipped:false,duration,newPRs,totalVolume};
+  Data.session.set(session,dk);
+  Data.session.setLast(dl,{date:dk,exercises});
+  /* Only advance the Push/Pull/Legs/Cardio sequence when logging for today. */
+  if(!isFree&&isLoggingToday())lsS('last_seq_idx',seqIdx);
   lsS('last_dl',dl);
-  const mlog=lsG('mlog:'+monthKey())||{};
-  mlog[todayKey()]={type:'done',dl,seqIdx:isFree?undefined:seqIdx};
-  lsS('mlog:'+monthKey(),mlog);
+  const mk=monthKeyFor(dk);
+  const mlog=lsG('mlog:'+mk)||{};
+  mlog[dk]={type:'done',dl,seqIdx:isFree?undefined:seqIdx};
+  lsS('mlog:'+mk,mlog);
   clearDraft();showStickyBtn(false);stopTimerTick();
   renderToday();
   const toast=document.getElementById('save-toast');
   if(toast){
     const prTxt=newPRs.length?' &#x2605; NEW PR: '+newPRs.join(', ')+'!':'';
-    toast.innerHTML='&#x2713; Session saved'+(duration?' ('+duration+' min)':'')+'.'+prTxt+' Targets updated.';
+    const when=isLoggingToday()?'':' for '+fmtLogDateLabel(dk);
+    toast.innerHTML='&#x2713; Session saved'+when+(duration?' ('+duration+' min)':'')+'.'+prTxt;
     toast.style.display='block';
     setTimeout(()=>{toast.style.display='none';},3000);
   }
@@ -1115,8 +1149,9 @@ function saveSession(dl,seqIdx){
 
 /* ===== EDIT / SKIP / UNSKIP ===== */
 function editSession(){
-  if(!confirm('Unlock today\'s session for editing? Current save will be removed.'))return;
-  const ex=Data.session.get();if(!ex||ex.skipped)return;
+  if(!confirm('Unlock this session for editing? Current save will be removed.'))return;
+  const dk=activeDateKey();
+  const ex=Data.session.get(dk);if(!ex||ex.skipped)return;
   const isFree=ex.dl==='Free session';
   const seqIdx=isFree?null:(ex.seqIdx!==undefined&&ex.seqIdx!==null?ex.seqIdx:SEQ.indexOf(ex.dl));
   const gd=isFree?{label:'Free session',focus:'Your combo today',time:'',ex:ex.exercises.map(e=>({n:e.origName,...(findExDef(e.origName)||{}),priority:'normal'}))}:(DAYS[seqIdx]||DAYS.find(d=>d.label===ex.dl));
@@ -1128,9 +1163,10 @@ function editSession(){
     })),
     subOpen:null,note:ex.note||'',painNote:ex.painNote||'',startAt:Date.now(),lastSetAt:null
   };
-  Data.session.delete();
-  const mlog=lsG('mlog:'+monthKey())||{};delete mlog[todayKey()];lsS('mlog:'+monthKey(),mlog);
-  if(!isFree)lsS('last_seq_idx',(seqIdx+3)%4);
+  Data.session.delete(dk);
+  const mk=monthKeyFor(dk);
+  const mlog=lsG('mlog:'+mk)||{};delete mlog[dk];lsS('mlog:'+mk,mlog);
+  if(!isFree&&isLoggingToday())lsS('last_seq_idx',(seqIdx+3)%4);
   adHocDay=gd;adHocSeqIdx=seqIdx;
   saveDraft(ex.dl);
   renderToday();
@@ -1151,18 +1187,22 @@ function showSkipSheet(){
 }
 function unskipSession(){
   if(!confirm('Remove skip and show workout?'))return;
-  Data.session.delete();
-  const mlog=lsG('mlog:'+monthKey())||{};delete mlog[todayKey()];lsS('mlog:'+monthKey(),mlog);
+  const dk=activeDateKey();
+  Data.session.delete(dk);
+  const mk=monthKeyFor(dk);
+  const mlog=lsG('mlog:'+mk)||{};delete mlog[dk];lsS('mlog:'+mk,mlog);
   renderToday();
 }
 function skipSession(reason){
   const nextIdx=getNextIdx();
   const gd=adHocDay||(nextIdx!==null?DAYS[nextIdx]:null);
   const dl=gd?gd.label:'Rest day';
-  Data.session.set({date:todayKey(),dl,skipped:true,skipReason:reason});
-  const mlog=lsG('mlog:'+monthKey())||{};
-  mlog[todayKey()]={type:'skip',reason,dl};
-  lsS('mlog:'+monthKey(),mlog);
+  const dk=activeDateKey();
+  Data.session.set({date:dk,dl,skipped:true,skipReason:reason},dk);
+  const mk=monthKeyFor(dk);
+  const mlog=lsG('mlog:'+mk)||{};
+  mlog[dk]={type:'skip',reason,dl};
+  lsS('mlog:'+mk,mlog);
   clearDraft();showStickyBtn(false);stopTimerTick();
   const ss=document.getElementById('skipsheet');if(ss)ss.style.display='none';
   renderToday();
@@ -1173,15 +1213,15 @@ function exportData(){
   const all={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&!k.startsWith('ws_draft:'))all[k]=lsG(k);}
   const blob=new Blob([JSON.stringify(all,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);const a=document.createElement('a');
-  a.href=url;a.download='roshan-fitness-'+todayKey()+'.json';
+  a.href=url;a.download='gym-backup-'+todayKey()+'.json';
   document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
   lsS('last_export',todayKey());renderProgress();
 }
 function shareBackup(){
   const data={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);data[k]=localStorage.getItem(k);}
-  const file=new File([JSON.stringify(data)],'roshan-fitness-'+todayKey()+'.json',{type:'application/json'});
+  const file=new File([JSON.stringify(data)],'gym-backup-'+todayKey()+'.json',{type:'application/json'});
   if(navigator.canShare&&navigator.canShare({files:[file]})){
-    navigator.share({files:[file],title:'Fitness backup '+todayKey()}).then(()=>{lsS('last_export',todayKey());renderProgress();}).catch(()=>{});
+    navigator.share({files:[file],title:'Gym backup '+todayKey()}).then(()=>{lsS('last_export',todayKey());renderProgress();}).catch(()=>{});
   }else{exportData();}
 }
 function showTextModal(title,text){
@@ -1216,10 +1256,11 @@ function importData(input){
 }
 
 /* ===== SYMPTOM + WATER ===== */
-function logSym(field,val){const sym=lsG('sym:'+todayKey())||{};sym[field]=val;sym.date=todayKey();lsS('sym:'+todayKey(),sym);renderToday();}
+function logSym(field,val){const dk=activeDateKey();const sym=lsG('sym:'+dk)||{};sym[field]=val;sym.date=dk;lsS('sym:'+dk,sym);renderToday();}
 function adjWater(n){
-  const cur=lsG('water:'+todayKey())||0;const next=Math.max(0,Math.min(20,cur+n));
-  lsS('water:'+todayKey(),next);
+  const dk=activeDateKey();
+  const cur=lsG('water:'+dk)||0;const next=Math.max(0,Math.min(20,cur+n));
+  lsS('water:'+dk,next);
   const el=document.getElementById('water-num'),bar=document.getElementById('water-bar');
   if(el){el.textContent=next;el.className='water-count'+(next>=8?' full':'');}
   if(bar)bar.style.width=Math.min(next/8*100,100)+'%';
@@ -1275,15 +1316,113 @@ function showStickyBtn(show,dl,seqIdx){
     b.onclick=()=>{if(b.disabled)return;b.disabled=true;b.style.opacity='.6';saveSession(dl,seqIdx);};
   }
 }
+/* ===== RUN + STRAVA LINK ===== */
+function parseStravaActivityId(url){
+  const m=String(url||'').match(/strava\.com\/activities\/(\d+)/i);
+  return m?m[1]:null;
+}
+function getRun(dateKey){return lsG('run:'+(dateKey||activeDateKey()));}
+function deleteRun(){
+  if(!confirm('Delete this run log?'))return;
+  lsDel('run:'+activeDateKey());
+  renderToday();
+}
+function saveRunLog(){
+  const dk=activeDateKey();
+  const km=parseFloat(document.getElementById('run-km')?.value);
+  const mins=parseFloat(document.getElementById('run-mins')?.value);
+  const url=(document.getElementById('run-strava')?.value||'').trim();
+  const note=(document.getElementById('run-note')?.value||'').trim();
+  if(!km&&!mins&&!url){alert('Enter distance, time, or a Strava link.');return;}
+  const pace=(km>0&&mins>0)?(mins/km):null;
+  const run={
+    date:dk,
+    km:km||null,
+    mins:mins||null,
+    paceMinPerKm:pace?Math.round(pace*100)/100:null,
+    stravaUrl:url||null,
+    stravaId:parseStravaActivityId(url),
+    note:note||null,
+    savedAt:new Date().toISOString()
+  };
+  lsS('run:'+dk,run);
+  const conf=document.getElementById('run-conf');
+  if(conf){conf.style.display='block';setTimeout(()=>{conf.style.display='none';},2000);}
+  renderToday();
+}
+function openStrava(){
+  window.open('https://www.strava.com/athlete/training','_blank','noopener');
+}
+function renderRunCard(){
+  const dk=activeDateKey();
+  const run=getRun(dk);
+  if(run){
+    const pace=run.paceMinPerKm?` · ${run.paceMinPerKm} min/km`:'';
+    const dist=run.km!=null?`${run.km} km`:'';
+    const time=run.mins!=null?`${run.mins} min`:'';
+    const bits=[dist,time].filter(Boolean).join(' · ');
+    return `<div class="card success" id="run-card" style="margin-bottom:10px">
+      <div class="cl">Run logged</div>
+      <div class="ct" style="color:var(--grn);margin-bottom:4px">${bits||'Run'}${pace}</div>
+      ${run.stravaUrl?`<a href="${escHtml(run.stravaUrl)}" target="_blank" rel="noopener" style="font-size:13px;color:var(--cyan);font-weight:600">Open on Strava &#x2197;</a>`:'<div class="cs">No Strava link attached</div>'}
+      ${run.note?`<div style="font-size:12px;color:var(--mut);margin-top:8px;font-style:italic">"${escHtml(run.note)}"</div>`:''}
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="document.getElementById('run-edit').style.display='block'">Edit</button>
+        <button class="btn btn-ghost btn-sm" style="flex:1;color:var(--red)" onclick="deleteRun()">Delete</button>
+      </div>
+      <div id="run-edit" style="display:none;margin-top:12px">${renderRunForm(run)}</div>
+    </div>`;
+  }
+  return `<div class="card" id="run-card" style="margin-bottom:10px">
+    <div class="cl">Run</div>
+    <div class="ct" style="margin-bottom:4px">Log a run for ${fmtLogDateLabel(dk)}</div>
+    <div class="cs" style="margin-bottom:12px">Paste a Strava activity link if you have one. Full auto-import needs a Strava API backend later — link + manual distance/time works now.</div>
+    ${renderRunForm(null)}
+  </div>`;
+}
+function renderRunForm(run){
+  run=run||{};
+  return `<div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:120px;font-weight:500">Distance (km)</div>
+      <input class="sinput" id="run-km" type="number" inputmode="decimal" step="0.01" placeholder="5.2" value="${run.km??''}" style="width:110px"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:120px;font-weight:500">Time (min)</div>
+      <input class="sinput" id="run-mins" type="number" inputmode="decimal" step="0.1" placeholder="28" value="${run.mins??''}" style="width:110px"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:120px;font-weight:500">Strava link</div>
+      <input class="sinput" id="run-strava" type="url" placeholder="https://www.strava.com/activities/..." value="${escHtml(run.stravaUrl||'')}" style="width:160px;flex:1"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:120px;font-weight:500">Note</div>
+      <input class="sinput" id="run-note" type="text" placeholder="easy / intervals..." value="${escHtml(run.note||'')}" style="width:160px;flex:1"></div>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+      <button class="btn btn-amb btn-sm" style="flex:1" onclick="saveRunLog()">Save run</button>
+      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="openStrava()">Open Strava</button>
+    </div>
+    <div id="run-conf" class="confbox">Run saved &#x2713;</div>`;
+}
+
 /* ===== RENDER TODAY ===== */
 function renderToday(){
+  const dk=activeDateKey();
   const nextIdx=getNextIdx();
   const gd=adHocDay||(nextIdx!==null?DAYS[nextIdx]:null);
-  const existing=Data.session.get();
-  const sym=lsG('sym:'+todayKey())||{};
-  const water=lsG('water:'+todayKey())||0;
+  const existing=Data.session.get(dk);
+  const sym=lsG('sym:'+dk)||{};
+  const water=lsG('water:'+dk)||0;
   const _freshList=Coach.getMuscleFreshness();
   let html='';
+
+  /* -- Workout date (catch-up logging) -- */
+  html+=`<div class="card" style="margin-bottom:10px">
+    <div class="cl">Logging for</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+      <button class="btn btn-ghost btn-sm" style="width:44px;padding:10px" onclick="shiftLogDate(-1)" title="Previous day">&#x2039;</button>
+      <input class="genin" type="date" id="log-date" max="${todayKey()}" value="${dk}" onchange="setLogDate(this.value)" style="text-align:center;font-weight:700">
+      <button class="btn btn-ghost btn-sm" style="width:44px;padding:10px${dk>=todayKey()?';opacity:.35':''}" onclick="shiftLogDate(1)" title="Next day" ${dk>=todayKey()?'disabled':''}>&#x203A;</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+      <div style="font-size:13px;color:var(--cyan);font-weight:700">${fmtLogDateLabel(dk)}${!isLoggingToday()?' · catch-up':''}</div>
+      ${!isLoggingToday()?`<button class="btn btn-ghost btn-sm" style="width:auto;margin:0;padding:8px 12px" onclick="setLogDate(todayKey())">Back to today</button>`:''}
+    </div>
+  </div>`;
+
+  html+=renderRunCard();
 
   /* -- Energy check-in -- */
   if(sym.energy){
@@ -1386,7 +1525,7 @@ function renderToday(){
     const seqIdx=gd.label==='Free session'?'free':(adHocSeqIdx!==null?adHocSeqIdx:(nextIdx!==null?nextIdx:0));
     initWS(gd.label,gd);
     const ws=WS[gd.label];
-    const hasDraft=!!lsG('ws_draft:'+todayKey());
+    const hasDraft=!!lsG('ws_draft:'+activeDateKey());
     if(sym.energy&&sym.energy<=2){
       html+=`<div class="card na" style="margin-bottom:10px;border-left:3px solid var(--amb)">
         <div class="cl" style="color:var(--amb)">Energy ${sym.energy}/5 \u2014 take it easier today</div>
@@ -2560,10 +2699,27 @@ function renderHistory(){
   if(recents.length){
     html+=`<div class="card"><div class="cl">Recent sessions</div><div class="ct" style="margin-bottom:10px">Last 14 days</div>
       ${recents.map(s=>`<div class="hitem"><div style="display:flex;justify-content:space-between;align-items:center">
-        <div><div style="font-size:15px;font-weight:700;font-family:'Barlow',sans-serif">${s.date}${s.duration?' <span style="font-size:12px;color:var(--dim);font-family:\'IBM Plex Sans\',sans-serif">'+s.duration+'m</span>':''}</div>
+        <div><div style="font-size:15px;font-weight:700;font-family:'Barlow',sans-serif;cursor:pointer;text-decoration:underline;text-decoration-color:var(--c3)" onclick="setLogDate('${s.date}');document.querySelectorAll('.tab')[0].click()">${s.date}${s.duration?' <span style="font-size:12px;color:var(--dim);font-family:\'IBM Plex Sans\',sans-serif;text-decoration:none">'+s.duration+'m</span>':''}</div>
         <div style="font-size:13px;color:var(--mut)">${s.dl}${s.newPRs&&s.newPRs.length?' &#x2605;':''}</div></div>
         <div class="pill ${s.skipped?(s.skipReason==='sick'?'pr':'pa'):'pg'}">${s.skipped?(s.skipReason==='sick'?'Sick':s.skipReason==='tired'?'Tired':'Busy'):'Done &#x2713;'}</div>
       </div>${s.note?`<div style="font-size:12px;color:var(--dim);margin-top:4px;font-style:italic">"${escHtml(s.note)}"</div>`:''}</div>`).join('')}
+    </div>`;
+  }
+
+  const recentRuns=[];
+  for(let d=0;d<14;d++){
+    const dt=new Date(now);dt.setDate(dt.getDate()-d);
+    const rk=formatDateKey(dt);const r=getRun(rk);if(r)recentRuns.push(r);
+  }
+  if(recentRuns.length){
+    html+=`<div class="card"><div class="cl">Recent runs</div><div class="ct" style="margin-bottom:10px">Last 14 days</div>
+      ${recentRuns.map(r=>`<div class="hitem"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <div>
+          <div style="font-size:15px;font-weight:700;font-family:'Barlow',sans-serif">${r.date}</div>
+          <div style="font-size:13px;color:var(--mut)">${[r.km!=null?r.km+' km':null,r.mins!=null?r.mins+' min':null,r.paceMinPerKm?r.paceMinPerKm+' min/km':null].filter(Boolean).join(' · ')||'Run'}</div>
+        </div>
+        ${r.stravaUrl?`<a href="${escHtml(r.stravaUrl)}" target="_blank" rel="noopener" class="pill pi">Strava</a>`:'<span class="pill pd">Manual</span>'}
+      </div></div>`).join('')}
     </div>`;
   }
 
@@ -2930,16 +3086,19 @@ runMigration();
 (()=>{const bw=lsG('bar_weights')||{};if(!bw.smith){bw.smith='15';lsS('bar_weights',bw);}})();
 checkStorage();
 checkUpdate();
-if(!Data.session.get()){
+if(!Data.session.get(activeDateKey())){
   const d=Data.draft.findAny();
   if(d&&d.dl&&d.state){
-    WS[d.dl]=d.state;
-    if(d.dl==='Free session'){
-      adHocDay={label:'Free session',focus:'Your combo today',time:'',ex:d.state.ex.map(e=>({n:e.origName,...(findExDef(e.origName)||{}),priority:'normal'}))};
-      adHocSeqIdx=null;
-    }else{
-      const _idx=SEQ.indexOf(d.dl);
-      if(_idx>=0){adHocDay=DAYS[_idx];adHocSeqIdx=_idx;}
+    if(d.date&&d.date<=todayKey())_logDateKey=d.date===todayKey()?null:d.date;
+    if(!Data.session.get(activeDateKey())){
+      WS[d.dl]=d.state;
+      if(d.dl==='Free session'){
+        adHocDay={label:'Free session',focus:'Your combo today',time:'',ex:d.state.ex.map(e=>({n:e.origName,...(findExDef(e.origName)||{}),priority:'normal'}))};
+        adHocSeqIdx=null;
+      }else{
+        const _idx=SEQ.indexOf(d.dl);
+        if(_idx>=0){adHocDay=DAYS[_idx];adHocSeqIdx=_idx;}
+      }
     }
   }
 }

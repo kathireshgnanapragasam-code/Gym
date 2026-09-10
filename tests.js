@@ -16,7 +16,8 @@ T('no Roshan branding', !/Roshan Fitness/.test(src));
 T('no Crohn / seton / infliximab medical copy', !/Crohn|Seton|infliximab|gastroenterologist/i.test(src));
 T('no wife app references in UI copy', !/your wife/i.test(src));
 T('no must/optional exercise tiers in UI', !src.includes('MUST') && !src.includes('Must do') && !src.includes("priority:'must'"));
-T('end-of-day logging helpers', src.includes('function setHasData') && src.includes('function markFilledSetsDone') && src.includes('Log today'));
+T('workout date picker for catch-up logging', src.includes('function setLogDate') && src.includes('function activeDateKey') && src.includes('id="log-date"'));
+T('run log with optional Strava link', src.includes('function saveRunLog') && src.includes('function parseStravaActivityId') && src.includes('run-strava'));
 T('photo recipe save pipeline exists', src.includes('function saveRecipeFromPhoto') && src.includes('function onRecipePhotoSelected') && src.includes('compressImageFile'));
 
 /* Program */
