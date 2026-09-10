@@ -210,6 +210,9 @@ textarea.genin{resize:none}
 .ex-search:focus{outline:none;border-color:var(--cyan)}
 .chart-wrap{background:var(--c2);border-radius:12px;padding:12px;margin-top:8px}
 .chart-label{font-size:10px;color:var(--mut);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
+.lift-chart-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.lift-chart-row .foodsel{flex:1;min-width:140px;margin-bottom:0}
+.lift-chart-meta{font-size:12px;color:var(--mut);margin-top:8px;line-height:1.4}
 </style>
 </head>
 <body>
@@ -281,7 +284,12 @@ const DAYS=[
     {n:'Hip adduction machine',s:3,r:'12\u201315',nt:'',priority:'normal',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Adductors'],secondaryMuscles:[],tip:'Same machine as abduction, opposite direction.'},
     {n:'Cable pull-through',s:3,r:'10\u201312',nt:'Hip hinge pattern without a deadlift bar',priority:'normal',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Lower back'],secondaryMuscles:['Glutes','Hamstrings'],tip:'Hips back, not down \u2014 this is a hinge, not a squat.'}
   ]},
-  {label:'Cardio + core',focus:'Conditioning + midsection',time:'Gym / outdoors',ex:[
+  {label:'Cardio + core',focus:'Strava run day \u00b7 distance, pace, elev, calories',time:'Outdoors / Strava',ex:[
+    {n:'Steady cardio',s:1,r:'20\u201340 min',nt:'Logged via Strava section',priority:'normal',noweight:true,inputType:'seconds',wlabel:'Minutes',primaryMuscles:['Cardio'],secondaryMuscles:['Calves','Quads']}
+  ]},
+];
+/* legacy cardio exercise catalog kept for history lookups */
+const CARDIO_DAY_EX=[
     {n:'Steady cardio',s:1,r:'20\u201340 min',nt:'Log minutes in the time field',priority:'normal',noweight:true,inputType:'choice',primaryMuscles:['Cardio'],secondaryMuscles:[],
      choiceOptions:[
        {name:'Incline treadmill walk',r:'25\u201340 min',inputType:'seconds',wlabel:'Minutes',primaryMuscles:['Cardio'],secondaryMuscles:['Calves','Glutes']},
@@ -294,7 +302,6 @@ const DAYS=[
     {n:'Dead bug',s:3,r:'10 each',nt:'',priority:'normal',noweight:true,inputType:'reps_each',wlabel:'Reps per side',primaryMuscles:['Core'],secondaryMuscles:[],tip:'Lower back stays pressed into the floor.'},
     {n:'Cable crunch',s:3,r:'12\u201315',nt:'',priority:'normal',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Abs'],secondaryMuscles:[],tip:'Round through the spine \u2014 crunch at the waist, not just arm pull.'},
     {n:'Hanging knee raises',s:3,r:'8\u201312',nt:'',priority:'normal',noweight:true,inputType:'bodyweight',wlabel:'Bodyweight',primaryMuscles:['Abs'],secondaryMuscles:['Hip flexors'],tip:'Control the swing \u2014 raise knees with the abs, not momentum.'}
-  ]}
 ];
 const SUBS={
   'Incline DB press':['Incline machine press','Incline press (Smith machine)','High-to-low cable fly'],
@@ -351,13 +358,14 @@ const SUB_TYPE_OVERRIDE={
   'Assault bike intervals':{inputType:'seconds',wlabel:'Minutes',noweight:true}
 };
 function findExDef(name){
-  for(const d of DAYS){for(const e of d.ex){
+  const catalogs=[...DAYS.map(d=>d.ex),CARDIO_DAY_EX];
+  for(const exList of catalogs){for(const e of exList){
     if(e.n===name)return e;
     if(e.inputType==='choice'&&e.choiceOptions){const o=e.choiceOptions.find(o=>o.name===name);if(o)return{...e,...o};}
   }}
   for(const origName in SUBS){
     if(SUBS[origName].includes(name)){
-      const origDef=DAYS.flatMap(d=>d.ex).find(x=>x.n===origName);
+      const origDef=[...DAYS.flatMap(d=>d.ex),...CARDIO_DAY_EX].find(x=>x.n===origName);
       const override=SUB_TYPE_OVERRIDE[name];
       return{
         n:name,s:origDef?.s||3,r:origDef?.r||'10\u201312',
@@ -614,6 +622,12 @@ function mountBodyDiagram(frontElId,backElId,bodyState,onMuscleClick,prevInstanc
   return{front,back};
 }
 let _progressCharts={front:null,back:null},_progressDiagMode='volume',_progressSelectedTags=[];
+let _liftChartState={
+  push:{ex:null,range:'week'},
+  pull:{ex:null,range:'week'},
+  legs:{ex:null,range:'week'}
+};
+const LIFT_CHART_DAYS={push:'Push day',pull:'Pull day',legs:'Legs day'};
 function setProgressDiagMode(mode){
   _progressDiagMode=mode;
   _progressSelectedTags=[];
@@ -1334,6 +1348,158 @@ function parseStravaActivityId(url){
   const m=String(url||'').match(/strava\.com\/activities\/(\d+)/i);
   return m?m[1]:null;
 }
+function getStravaAuth(){return lsG('strava_auth')||null;}
+function saveStravaAuth(a){lsS('strava_auth',a);}
+function stravaRedirectUri(){
+  return (location.origin+location.pathname).replace(/index\.html$/i,'').replace(/\/?$/,'/');
+}
+function stravaConnected(){
+  const a=getStravaAuth();
+  return !!(a&&a.accessToken&&a.refreshToken&&a.clientId&&a.clientSecret);
+}
+function saveStravaCredentials(){
+  const clientId=(document.getElementById('strava-client-id')?.value||'').trim();
+  const clientSecret=(document.getElementById('strava-client-secret')?.value||'').trim();
+  if(!clientId||!clientSecret){alert('Enter both Client ID and Client Secret from Strava API settings.');return;}
+  const prev=getStravaAuth()||{};
+  saveStravaAuth({...prev,clientId,clientSecret});
+  const c=document.getElementById('strava-conf');if(c){c.style.display='block';setTimeout(()=>c.style.display='none',1500);}
+  renderToday();
+}
+function disconnectStrava(){
+  if(!confirm('Disconnect Strava? Autofill from links will stop until you connect again.'))return;
+  const a=getStravaAuth()||{};
+  saveStravaAuth({clientId:a.clientId||'',clientSecret:a.clientSecret||''});
+  renderToday();
+}
+function startStravaConnect(){
+  const a=getStravaAuth();
+  if(!a?.clientId||!a?.clientSecret){alert('Save your Strava Client ID and Client Secret first.');return;}
+  const redirect=encodeURIComponent(stravaRedirectUri());
+  const url=`https://www.strava.com/oauth/authorize?client_id=${encodeURIComponent(a.clientId)}&response_type=code&redirect_uri=${redirect}&approval_prompt=auto&scope=${encodeURIComponent('read,activity:read_all')}`;
+  location.href=url;
+}
+async function exchangeStravaToken(body){
+  const res=await fetch('https://www.strava.com/oauth/token',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(body)
+  });
+  const data=await res.json().catch(()=>({}));
+  if(!res.ok)throw new Error(data?.message||data?.error||('Token exchange failed ('+res.status+')'));
+  return data;
+}
+async function ensureStravaAccessToken(){
+  const a=getStravaAuth();
+  if(!a?.clientId||!a?.clientSecret)throw new Error('Connect Strava below first (Client ID + Secret + Connect).');
+  if(!a.refreshToken&&!a.accessToken)throw new Error('Connect Strava below first.');
+  const skew=120000;
+  if(a.accessToken&&a.expiresAt&&Date.now()<a.expiresAt-skew)return a.accessToken;
+  if(!a.refreshToken)throw new Error('Strava session expired — reconnect below.');
+  const data=await exchangeStravaToken({
+    client_id:a.clientId,
+    client_secret:a.clientSecret,
+    grant_type:'refresh_token',
+    refresh_token:a.refreshToken
+  });
+  saveStravaAuth({
+    ...a,
+    accessToken:data.access_token,
+    refreshToken:data.refresh_token||a.refreshToken,
+    expiresAt:Date.now()+(data.expires_in||21600)*1000,
+    athleteId:data.athlete?.id||a.athleteId
+  });
+  return data.access_token;
+}
+async function handleStravaOAuthReturn(){
+  const params=new URLSearchParams(location.search);
+  const code=params.get('code');
+  const err=params.get('error');
+  if(!code&&!err)return;
+  history.replaceState({},'',location.pathname+location.hash);
+  if(err){alert('Strava connect was cancelled.');return;}
+  const a=getStravaAuth();
+  if(!a?.clientId||!a?.clientSecret){alert('Save Client ID and Secret in Progress, then Connect again.');return;}
+  try{
+    const data=await exchangeStravaToken({
+      client_id:a.clientId,
+      client_secret:a.clientSecret,
+      code,
+      grant_type:'authorization_code'
+    });
+    saveStravaAuth({
+      ...a,
+      accessToken:data.access_token,
+      refreshToken:data.refresh_token,
+      expiresAt:Date.now()+(data.expires_in||21600)*1000,
+      athleteId:data.athlete?.id||null,
+      connectedAt:new Date().toISOString()
+    });
+    alert('Strava connected. On your next Cardio day, paste an activity link to autofill.');
+  }catch(e){
+    alert('Strava connect failed: '+(e.message||e));
+  }
+}
+function setRunStravaStatus(msg,tone){
+  const el=document.getElementById('run-strava-status');if(!el)return;
+  const col=tone==='ok'?'var(--grn)':tone==='err'?'var(--red)':'var(--mut)';
+  el.innerHTML=msg?`<div style="font-size:12px;color:${col};margin-top:6px">${msg}</div>`:'';
+}
+function applyStravaActivityToForm(act){
+  const km=Math.round((act.distance||0)/10)/100; /* m → km, 2dp */
+  const mins=Math.round((act.moving_time||0)/6)/10; /* s → min, 1dp */
+  const elevGain=Math.round(act.total_elevation_gain||0);
+  const kmEl=document.getElementById('run-km');
+  const minsEl=document.getElementById('run-mins');
+  const paceEl=document.getElementById('run-pace');
+  const gainEl=document.getElementById('run-elev-gain');
+  const noteEl=document.getElementById('run-note');
+  if(kmEl&&km>0)kmEl.value=String(km);
+  if(minsEl&&mins>0)minsEl.value=String(mins);
+  if(paceEl){
+    delete paceEl.dataset.touched;
+    const p=paceFromKmMins(km,mins);
+    if(p)paceEl.value=String(p);
+  }
+  if(gainEl&&elevGain>0)gainEl.value=String(elevGain);
+  if(noteEl&&!noteEl.value&&act.name)noteEl.value=act.name;
+  updateRunCalPreview();
+}
+async function fetchAndFillFromStravaLink(force){
+  const url=(document.getElementById('run-strava')?.value||'').trim();
+  const id=parseStravaActivityId(url);
+  if(!id){
+    if(force)setRunStravaStatus('Paste a full Strava activity link (…/activities/12345).','err');
+    return;
+  }
+  if(!stravaConnected()){
+    setRunStravaStatus('Link saved for reference — connect Strava below to autofill stats.','err');
+    return;
+  }
+  setRunStravaStatus('Fetching activity from Strava…','');
+  try{
+    const token=await ensureStravaAccessToken();
+    const res=await fetch('https://www.strava.com/api/v3/activities/'+id,{
+      headers:{Authorization:'Bearer '+token}
+    });
+    const act=await res.json().catch(()=>({}));
+    if(!res.ok)throw new Error(act?.message||('Strava error '+res.status));
+    applyStravaActivityToForm(act);
+    const bits=[
+      act.distance?((Math.round(act.distance/10)/100)+' km'):null,
+      act.moving_time?(Math.round(act.moving_time/6)/10)+' min':null,
+      act.total_elevation_gain!=null?('↑'+Math.round(act.total_elevation_gain)+'m'):null
+    ].filter(Boolean).join(' · ');
+    setRunStravaStatus('Autofilled from Strava'+(bits?': '+bits:'')+'. Elev loss isn\u2019t in Strava\u2019s summary — add it manually if you want.','ok');
+  }catch(e){
+    setRunStravaStatus('Couldn\u2019t autofill: '+(e.message||e)+'. Enter numbers manually.','err');
+  }
+}
+let _stravaLinkTimer=null;
+function onStravaLinkInput(){
+  clearTimeout(_stravaLinkTimer);
+  _stravaLinkTimer=setTimeout(()=>fetchAndFillFromStravaLink(false),600);
+}
 function getRun(dateKey){return lsG('run:'+(dateKey||activeDateKey()));}
 function deleteRun(){
   if(!confirm('Delete this run log?'))return;
@@ -1414,14 +1580,14 @@ function onRunPaceTouched(){
   const el=document.getElementById('run-pace');if(el)el.dataset.touched='1';
   updateRunCalPreview();
 }
-function saveRunLog(){
-  const dk=activeDateKey();
+function buildRunFromForm(){
   const f=readRunFormFields();
-  if(!f.km&&!f.mins&&!f.url){alert('Enter distance, moving time, or a Strava link.');return;}
+  if(!f.km&&!f.mins&&!f.url)return{error:'Enter distance, moving time, or a Strava link.'};
   const body=getBodyForCalcs();
   const pace=f.pace||paceFromKmMins(f.km,f.mins);
   const est=estimateRunCalories({km:f.km,mins:f.mins,elevGainM:f.elevGain,weightKg:body.weightKg});
-  const run={
+  const dk=activeDateKey();
+  return{run:{
     date:dk,
     km:f.km||null,
     mins:f.mins||null,
@@ -1437,51 +1603,180 @@ function saveRunLog(){
     stravaId:parseStravaActivityId(f.url),
     note:f.note||null,
     savedAt:new Date().toISOString()
-  };
-  lsS('run:'+dk,run);
+  }};
+}
+function saveRunLog(){
+  const built=buildRunFromForm();
+  if(built.error){alert(built.error);return;}
+  lsS('run:'+activeDateKey(),built.run);
   const conf=document.getElementById('run-conf');
   if(conf){conf.style.display='block';setTimeout(()=>{conf.style.display='none';},2000);}
   renderToday();
 }
+function saveCardioDay(seqIdx){
+  const built=buildRunFromForm();
+  if(built.error){alert(built.error);return;}
+  const run=built.run;
+  const dk=activeDateKey();
+  lsS('run:'+dk,run);
+  const dl='Cardio + core';
+  const duration=run.mins!=null?Math.round(run.mins):null;
+  const summary=[
+    run.km!=null?run.km+' km':null,
+    run.mins!=null?run.mins+' min':null,
+    run.paceMinPerKm!=null?fmtPace(run.paceMinPerKm):null,
+    run.calories!=null?run.calories+' kcal':null
+  ].filter(Boolean).join(' · ');
+  const exercises=[{
+    name:'Outdoor run / Strava',
+    origName:'Steady cardio',
+    best:run.mins!=null?{w:String(run.mins),r:''}:null,
+    sets:[{w:String(run.mins||''),r:'',done:true,isDrop:false}],
+    suggestion:summary||'Strava cardio logged',
+    isPR:false,
+    inputType:'seconds',
+    exVolume:parseFloat(run.mins)||0
+  }];
+  const noteEl=document.getElementById('run-session-note');
+  const sessionNote=(noteEl?.value||run.note||'').trim();
+  const session={date:dk,dl,seqIdx:seqIdx===undefined||seqIdx===null?3:seqIdx,exercises,note:sessionNote,painNote:'',skipped:false,duration,newPRs:[],totalVolume:exercises[0].exVolume,cardio:true};
+  Data.session.set(session,dk);
+  Data.session.setLast(dl,{date:dk,exercises});
+  if(isLoggingToday())lsS('last_seq_idx',session.seqIdx);
+  lsS('last_dl',dl);
+  const mk=monthKeyFor(dk);
+  const mlog=lsG('mlog:'+mk)||{};
+  mlog[dk]={type:'done',dl,seqIdx:session.seqIdx};
+  lsS('mlog:'+mk,mlog);
+  clearDraft();showStickyBtn(false);stopTimerTick();
+  adHocDay=null;adHocSeqIdx=null;
+  renderToday();
+  const toast=document.getElementById('save-toast');
+  if(toast){
+    const when=isLoggingToday()?'':' for '+fmtLogDateLabel(dk);
+    toast.innerHTML='&#x2713; Cardio day saved'+when+(duration?' ('+duration+' min)':'')+(run.calories!=null?' · '+run.calories+' kcal':'')+'.';
+    toast.style.display='block';
+    setTimeout(()=>{toast.style.display='none';},3000);
+  }
+}
 function openStrava(){
   window.open('https://www.strava.com/athlete/training','_blank','noopener');
 }
-function renderRunCard(){
+function renderStravaConnectBlock(){
+  const sAuth=getStravaAuth()||{};
+  const sOk=stravaConnected();
+  return `<div class="card" style="margin-bottom:10px">
+    <div class="cl">Strava connect</div>
+    <div class="ct" style="margin-bottom:4px">${sOk?'Connected \u2014 one-time setup done':'One-time setup for link autofill'}</div>
+    <div class="cs" style="margin-bottom:10px">Connect once. After that, paste an activity link and distance, moving time, pace, and elev gain fill in. Credentials stay on this device.</div>
+    <div class="cs" style="margin-bottom:10px">1. Open <a href="https://www.strava.com/settings/api" target="_blank" rel="noopener" style="color:var(--cyan)">strava.com/settings/api</a><br>
+      2. Create an app (any name)<br>
+      3. Set <b style="color:var(--txt)">Authorization Callback Domain</b> to <code style="color:var(--cyan)">${escHtml(location.hostname||'your-github-pages-host')}</code><br>
+      4. Paste Client ID + Client Secret, Save, then Connect</div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:120px;font-weight:500">Client ID</div>
+      <input class="sinput" id="strava-client-id" type="text" inputmode="numeric" value="${escHtml(sAuth.clientId||'')}" style="width:140px;flex:1"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:120px;font-weight:500">Client Secret</div>
+      <input class="sinput" id="strava-client-secret" type="password" value="${escHtml(sAuth.clientSecret||'')}" style="width:140px;flex:1" autocomplete="off"></div>
+    <div style="font-size:12px;color:${sOk?'var(--grn)':'var(--amb)'};margin:8px 0 10px;font-weight:600">${sOk?'&#x2713; Connected':'Not connected yet'}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-amb btn-sm" style="flex:1" onclick="saveStravaCredentials()">Save credentials</button>
+      <button class="btn btn-grn btn-sm" style="flex:1" onclick="startStravaConnect()">${sOk?'Reconnect':'Connect Strava'}</button>
+    </div>
+    ${sOk?`<button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px;color:var(--red)" onclick="disconnectStrava()">Disconnect</button>`:''}
+    <div style="font-size:11px;color:var(--dim);margin-top:8px">Redirect URI: ${escHtml(stravaRedirectUri())}</div>
+    <div id="strava-conf" class="confbox">Credentials saved &#x2713;</div>
+  </div>`;
+}
+function renderRecentRunsBlock(){
+  const now=new Date();
+  const recentRuns=[];
+  for(let d=0;d<14;d++){
+    const dt=new Date(now);dt.setDate(dt.getDate()-d);
+    const rk=formatDateKey(dt);const r=getRun(rk);if(r)recentRuns.push(r);
+  }
+  if(!recentRuns.length)return`<div class="card" style="margin-bottom:10px"><div class="cl">Recent runs</div><div class="cs">No runs logged in the last 14 days yet.</div></div>`;
+  return `<div class="card" style="margin-bottom:10px"><div class="cl">Recent runs</div><div class="ct" style="margin-bottom:10px">Last 14 days</div>
+    ${recentRuns.map(r=>`<div class="hitem"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <div>
+        <div style="font-size:15px;font-weight:700;font-family:'Barlow',sans-serif">${r.date}</div>
+        <div style="font-size:13px;color:var(--mut)">${[
+          r.km!=null?r.km+' km':null,
+          r.mins!=null?r.mins+' min':null,
+          r.paceMinPerKm!=null?fmtPace(r.paceMinPerKm):null,
+          r.calories!=null?r.calories+' kcal':null,
+          r.elevGainM?('↑'+r.elevGainM+'m'):null
+        ].filter(Boolean).join(' · ')||'Run'}</div>
+      </div>
+      ${r.stravaUrl?`<a href="${escHtml(r.stravaUrl)}" target="_blank" rel="noopener" class="pill pi">Strava</a>`:'<span class="pill pd">Manual</span>'}
+    </div></div>`).join('')}
+  </div>`;
+}
+function renderRunSummaryCard(run){
+  if(!run)return'';
+  const bits=[
+    run.km!=null?`${run.km} km`:null,
+    run.mins!=null?`${run.mins} min moving`:null,
+    run.paceMinPerKm!=null?fmtPace(run.paceMinPerKm):null,
+    run.calories!=null?`${run.calories} kcal`:null
+  ].filter(Boolean).join(' · ');
+  const elev=[
+    run.elevGainM?`+${run.elevGainM}m`:null,
+    run.elevLossM?`\u2212${run.elevLossM}m`:null
+  ].filter(Boolean).join(' / ');
+  return `<div class="card success" style="margin-bottom:10px">
+    <div class="cl">Run metrics</div>
+    <div class="ct" style="color:var(--grn);margin-bottom:4px">${bits||'Run'}</div>
+    ${elev?`<div style="font-size:13px;color:var(--mut);margin-bottom:6px">Elevation ${elev}${run.elevNetM!=null?` · net ${run.elevNetM>0?'+':''}${run.elevNetM}m`:''}</div>`:''}
+    ${run.caloriesMeta?`<div style="font-size:11px;color:var(--dim);margin-bottom:6px">${run.caloriesMeta.formula} · ${run.caloriesMeta.weightKg}kg @ ${run.caloriesMeta.bodyFatPct}% BF</div>`:''}
+    ${run.stravaUrl?`<a href="${escHtml(run.stravaUrl)}" target="_blank" rel="noopener" style="font-size:13px;color:var(--cyan);font-weight:600">Open on Strava &#x2197;</a>`:''}
+    ${run.note?`<div style="font-size:12px;color:var(--mut);margin-top:8px;font-style:italic">"${escHtml(run.note)}"</div>`:''}
+  </div>`;
+}
+function renderCardioDaySection(gd,seqIdx){
   const dk=activeDateKey();
   const run=getRun(dk);
   const body=getBodyForCalcs();
-  if(run){
-    const bits=[
-      run.km!=null?`${run.km} km`:null,
-      run.mins!=null?`${run.mins} min moving`:null,
-      run.paceMinPerKm!=null?fmtPace(run.paceMinPerKm):null,
-      run.calories!=null?`${run.calories} kcal`:null
-    ].filter(Boolean).join(' · ');
-    const elev=[
-      run.elevGainM?`+${run.elevGainM}m`:null,
-      run.elevLossM?`\u2212${run.elevLossM}m`:null
-    ].filter(Boolean).join(' / ');
-    return `<div class="card success" id="run-card" style="margin-bottom:10px">
-      <div class="cl">Run logged</div>
-      <div class="ct" style="color:var(--grn);margin-bottom:4px">${bits||'Run'}</div>
-      ${elev?`<div style="font-size:13px;color:var(--mut);margin-bottom:6px">Elevation ${elev}${run.elevNetM!=null?` · net ${run.elevNetM>0?'+':''}${run.elevNetM}m`:''}</div>`:''}
-      ${run.caloriesMeta?`<div style="font-size:11px;color:var(--dim);margin-bottom:6px">${run.caloriesMeta.formula} · ${run.caloriesMeta.weightKg}kg @ ${run.caloriesMeta.bodyFatPct}% BF</div>`:''}
-      ${run.stravaUrl?`<a href="${escHtml(run.stravaUrl)}" target="_blank" rel="noopener" style="font-size:13px;color:var(--cyan);font-weight:600">Open on Strava &#x2197;</a>`:'<div class="cs">No Strava link attached</div>'}
-      ${run.note?`<div style="font-size:12px;color:var(--mut);margin-top:8px;font-style:italic">"${escHtml(run.note)}"</div>`:''}
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="document.getElementById('run-edit').style.display='block';updateRunCalPreview()">Edit</button>
-        <button class="btn btn-ghost btn-sm" style="flex:1;color:var(--red)" onclick="deleteRun()">Delete</button>
+  const hasDraft=!!lsG('ws_draft:'+dk);
+  let html=`<div class="card" style="margin-bottom:10px;border-color:var(--cbr)">
+      <div class="sess-hd">
+        <div><div class="cl">${gd.time}${hasDraft?' &middot; <span style="color:var(--cyan)">In progress</span>':''}</div>
+          <div class="ct">${gd.label}</div><div class="cs">${gd.focus}</div>
+          <button style="font-size:12px;color:var(--mut);background:none;border:none;cursor:pointer;padding:4px 0;font-family:inherit" onclick="startSession(-1)">&#x21C4; Change session</button>
+        </div>
+        <div style="text-align:right;font-size:11px;color:var(--mut);font-weight:600;max-width:120px">Strava / outdoor run</div>
       </div>
-      <div id="run-edit" style="display:none;margin-top:12px">${renderRunForm(run)}</div>
     </div>`;
-  }
-  return `<div class="card" id="run-card" style="margin-bottom:10px">
-    <div class="cl">Run</div>
-    <div class="ct" style="margin-bottom:4px">Log a run for ${fmtLogDateLabel(dk)}</div>
-    <div class="cs" style="margin-bottom:10px">Copy distance, moving time, pace, and elevation from Strava (or your Xiaomi/Zepp summary). Calories are estimated with the ACSM running formula using your body weight (${body.weightKg}kg, ${body.bodyFatPct}% BF).</div>
-    <div class="nt ni" style="margin-bottom:12px">Xiaomi Watch: connect it to Strava in the Mi Fitness / Zepp app if you can, then paste numbers here. Direct watch sync isn\u2019t available in this browser app.</div>
-    ${renderRunForm(null)}
+  html+=`<div class="card cyan" style="margin-bottom:10px">
+    <div class="cl">How it works</div>
+    <div style="font-size:13px;color:var(--txt);line-height:1.55;margin-top:4px">
+      1. Connect Strava once (below)<br>
+      2. Finish your run on Strava / Xiaomi<br>
+      3. Paste the activity link \u2014 distance, moving time, pace, elev gain autofill<br>
+      4. Calories are estimated from your weight + body fat (ACSM)<br>
+      5. Tap <b>Log cardio day</b> to save and advance the sequence
+    </div>
   </div>`;
+  html+=renderStravaConnectBlock();
+  html+=`<div class="card" id="run-card" style="margin-bottom:10px">
+    <div class="cl">Today\u2019s run</div>
+    <div class="ct" style="margin-bottom:4px">${fmtLogDateLabel(dk)}</div>
+    <div class="cs" style="margin-bottom:12px">Using ${body.weightKg}kg · ${body.bodyFatPct}% BF (${body.source}) for calorie estimate.</div>
+    ${!stravaConnected()?`<div class="nt na" style="margin-bottom:12px">Connect Strava above once, then paste a link to autofill.</div>`:`<div class="nt ni" style="margin-bottom:12px">Strava connected. Paste a link and stats fill in automatically.</div>`}
+    ${renderRunForm(run)}
+    <div class="statrow" style="margin-top:8px"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">Session note</div>
+      <input class="sinput" id="run-session-note" type="text" placeholder="felt easy / windy / hills..." value="${escHtml(run?.note||'')}" style="width:160px;flex:1"></div>
+    <button class="btn btn-amb" style="width:100%;margin-top:14px" onclick="saveCardioDay(${seqIdx===undefined||seqIdx===null?3:seqIdx})">Log cardio day</button>
+  </div>`;
+  html+=renderRecentRunsBlock();
+  html+=`<button class="btn btn-ghost" onclick="document.getElementById('skipsheet').style.display='block'" style="margin-top:6px">Skip today</button>
+    <div class="skipsheet" id="skipsheet">
+      <div style="font-size:14px;font-weight:700;margin-bottom:12px;color:var(--mut)">Why skipping?</div>
+      <button class="skipopt" onclick="skipSession('sick')">Sick / injured</button>
+      <button class="skipopt" onclick="skipSession('tired')">Too tired</button>
+      <button class="skipopt" onclick="skipSession('busy')">Too busy</button>
+      <button class="skipopt" style="color:var(--mut);font-weight:500" onclick="document.getElementById('skipsheet').style.display='none'">Cancel</button>
+    </div>`;
+  return html;
 }
 function renderRunForm(run){
   run=run||{};
@@ -1496,12 +1791,13 @@ function renderRunForm(run){
     <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">Elev loss (m)</div>
       <input class="sinput" id="run-elev-loss" type="number" inputmode="decimal" step="1" placeholder="40" value="${run.elevLossM??''}" style="width:110px" oninput="updateRunCalPreview()"></div>
     <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">Strava link</div>
-      <input class="sinput" id="run-strava" type="url" placeholder="https://www.strava.com/activities/..." value="${escHtml(run.stravaUrl||'')}" style="width:160px;flex:1"></div>
-    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">Note</div>
+      <input class="sinput" id="run-strava" type="url" placeholder="https://www.strava.com/activities/..." value="${escHtml(run.stravaUrl||'')}" style="width:160px;flex:1" oninput="onStravaLinkInput()" onchange="fetchAndFillFromStravaLink(true)"></div>
+    <div id="run-strava-status"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">Run note</div>
       <input class="sinput" id="run-note" type="text" placeholder="easy / intervals..." value="${escHtml(run.note||'')}" style="width:160px;flex:1"></div>
     <div id="run-cal-preview" style="margin:10px 0;padding:10px 12px;background:var(--c2);border-radius:10px;border:1px solid var(--c3)"></div>
     <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-      <button class="btn btn-amb btn-sm" style="flex:1" onclick="saveRunLog()">Save run</button>
+      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="fetchAndFillFromStravaLink(true)">Fetch Strava</button>
       <button class="btn btn-ghost btn-sm" style="flex:1" onclick="openStrava()">Open Strava</button>
     </div>
     <div id="run-conf" class="confbox">Run saved &#x2713;</div>`;
@@ -1531,8 +1827,6 @@ function renderToday(){
       ${!isLoggingToday()?`<button class="btn btn-ghost btn-sm" style="width:auto;margin:0;padding:8px 12px" onclick="setLogDate(todayKey())">Back to today</button>`:''}
     </div>
   </div>`;
-
-  html+=renderRunCard();
 
   /* -- Energy check-in -- */
   if(sym.energy){
@@ -1580,14 +1874,15 @@ function renderToday(){
       <div class="cl">${existing.date}${existing.duration?' &middot; '+existing.duration+' min':''}</div>
       <div class="ct" style="color:var(--grn);margin-bottom:4px">&#x2713; ${existing.dl} complete</div>
       ${existing.newPRs&&existing.newPRs.length?`<div style="margin-bottom:10px"><span class="pill-pr">&#x2605; PR: ${existing.newPRs.join(', ')}</span></div>`:''}
-      <div style="font-size:13px;color:var(--mut);margin-bottom:12px">Next week targets:</div>
+      ${existing.dl==='Cardio + core'?renderRunSummaryCard(getRun(dk)):''}
+      ${existing.dl!=='Cardio + core'?`<div style="font-size:13px;color:var(--mut);margin-bottom:12px">Next week targets:</div>
       ${existing.exercises.map(e=>`<div style="padding:9px 0;border-bottom:1px solid var(--c3)">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <div style="font-size:15px;font-weight:700;font-family:'Barlow',sans-serif">${e.name}${e.isPR?' <span style="font-size:11px;color:var(--cyan)">PR&#x2191;</span>':''}</div>
           ${e.best?`<div style="font-size:12px;color:var(--dim)">${fmtCompletedBest(e)}</div>`:''}
         </div>
         <div style="font-size:12px;color:var(--cyan);margin-top:3px;font-weight:600">${e.suggestion||''}</div>
-      </div>`).join('')}
+      </div>`).join('')}`:`${existing.exercises?.[0]?.suggestion?`<div style="font-size:13px;color:var(--cyan);font-weight:600;margin-bottom:8px">${existing.exercises[0].suggestion}</div>`:''}`}
       ${existing.note?`<div style="margin-top:10px;font-size:13px;color:var(--mut);font-style:italic">"${existing.note}"</div>`:''}
       <button class="btn btn-ghost btn-sm" style="margin-top:12px" onclick="editSession()">&#x270F; Edit session</button>
     </div>`;
@@ -1633,6 +1928,11 @@ function renderToday(){
   else{
     const last=Data.session.getLast(gd.label);
     const seqIdx=gd.label==='Free session'?'free':(adHocSeqIdx!==null?adHocSeqIdx:(nextIdx!==null?nextIdx:0));
+    if(gd.label==='Cardio + core'){
+      html+=renderCardioDaySection(gd,seqIdx);
+      showStickyBtn(false);
+      stopTimerTick();
+    }else{
     initWS(gd.label,gd);
     const ws=WS[gd.label];
     const hasDraft=!!lsG('ws_draft:'+activeDateKey());
@@ -1805,6 +2105,7 @@ function renderToday(){
     </div>`;
     showStickyBtn(true,gd.label,seqIdx);
     stopTimerTick();
+    }
   }
 
   /* -- Weather placeholder (filled async after DOM write) -- */
@@ -1826,6 +2127,7 @@ function renderToday(){
   </div>`;
 
   const barWts=lsG('bar_weights')||{};
+  if(!(gd&&gd.label==='Cardio + core')){
   html+=`<div class="card" style="margin-top:12px"><div class="cl">Bar Weight Reference</div><div class="ct" style="margin-bottom:10px">For when the gym's labels are worn off</div>
     <div class="statrow"><div style="font-size:13px;color:var(--txt)">Olympic barbell</div><div style="font-size:13px;color:var(--grn);font-weight:700">20kg &middot; confirmed standard</div></div>
     <div class="statrow"><div style="font-size:13px;color:var(--txt)">Standard EZ curl bar</div><div style="font-size:13px;color:var(--grn);font-weight:700">10kg &middot; confirmed at your gym</div></div>
@@ -1833,6 +2135,7 @@ function renderToday(){
     <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:10px" onclick="saveBarWeight()">Save Smith machine weight</button>
     <div class="cs" style="margin-top:8px">No universal standard for Smith machines &mdash; counterweighting varies by model. Check a stamped weight on the bar, ask staff, or the bathroom-scale method, then save it here once.</div>
   </div>`;
+  }
 
   document.getElementById('p0').innerHTML=html;
   updateRunCalPreview();
@@ -1905,6 +2208,171 @@ function removeFromFreeSession(ei){
   saveDraft('Free session');
   renderToday();
 }
+/* ===== LIFT PROGRESS CHARTS (Push / Pull / Legs) ===== */
+function getLiftChartExercises(dayLabel){
+  const day=DAYS.find(d=>d.label===dayLabel);
+  if(!day)return[];
+  const names=[];
+  day.ex.forEach(e=>{
+    if(e.inputType==='choice'&&e.choiceOptions){
+      e.choiceOptions.forEach(o=>{
+        if(o.inputType!=='seconds')names.push(o.name);
+      });
+    }else if(e.inputType!=='seconds'){
+      names.push(e.n);
+    }
+    (SUBS[e.n]||[]).forEach(s=>{
+      const def=findExDef(s);
+      if(!def||def.inputType!=='seconds')names.push(s);
+    });
+  });
+  return[...new Set(names)];
+}
+function sessionAvgLoad(ex){
+  if(!ex)return null;
+  const itype=ex.inputType||'weight';
+  const sets=(ex.sets||[]).filter(s=>!s.isDrop);
+  if(itype==='seconds')return null;
+  if(itype==='bodyweight'){
+    const reps=sets.map(s=>parseInt(s.r)||0).filter(r=>r>0);
+    if(reps.length)return{avg:Math.round(reps.reduce((a,b)=>a+b,0)/reps.length*10)/10,unit:'reps',metric:'Avg reps'};
+    if(ex.best&&ex.best.r)return{avg:parseFloat(ex.best.r),unit:'reps',metric:'Best reps'};
+    return null;
+  }
+  if(itype==='reps_each'){
+    const reps=sets.map(s=>parseInt(s.r)||parseInt(s.w)||0).filter(r=>r>0);
+    if(reps.length)return{avg:Math.round(reps.reduce((a,b)=>a+b,0)/reps.length*10)/10,unit:'/side',metric:'Avg reps/side'};
+    if(ex.best&&(ex.best.r||ex.best.w))return{avg:parseFloat(ex.best.r||ex.best.w),unit:'/side',metric:'Best reps/side'};
+    return null;
+  }
+  /* Volume-weighted average weight across working sets: Σ(w×r) / Σ(r) */
+  let tw=0,tr=0;
+  const plain=[];
+  sets.forEach(s=>{
+    const w=parseFloat(s.w)||0,r=parseInt(s.r)||0;
+    if(w<=0)return;
+    if(r>0){tw+=w*r;tr+=r;}
+    else plain.push(w);
+  });
+  if(tr>0)return{avg:Math.round((tw/tr)*10)/10,unit:'kg',metric:'Avg weight'};
+  if(plain.length)return{avg:Math.round((plain.reduce((a,b)=>a+b,0)/plain.length)*10)/10,unit:'kg',metric:'Avg weight'};
+  if(ex.best&&parseFloat(ex.best.w)>0)return{avg:parseFloat(ex.best.w),unit:'kg',metric:'Best weight'};
+  return null;
+}
+function weekStartKey(dateStr){
+  const d=new Date(dateStr+'T12:00:00');
+  const day=(d.getDay()+6)%7;
+  d.setDate(d.getDate()-day);
+  return formatDateKey(d);
+}
+function weekBucketLabel(weekStart){
+  const d=new Date(weekStart+'T12:00:00');
+  return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+}
+function monthBucketLabel(ym){
+  const[y,m]=ym.split('-').map(Number);
+  return new Date(y,m-1,1).toLocaleDateString('en-GB',{month:'short',year:'2-digit'});
+}
+function getExAvgLoadHistory(exerciseName){
+  const results=[];
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(!k||!k.startsWith('sess:'))continue;
+    const sess=lsG(k);
+    if(!sess||sess.skipped||!sess.exercises||sess.cardio)continue;
+    const ex=sess.exercises.find(e=>e.name===exerciseName||e.origName===exerciseName);
+    if(!ex)continue;
+    const load=sessionAvgLoad(ex);
+    if(!load)continue;
+    results.push({date:sess.date,avg:load.avg,unit:load.unit,metric:load.metric,isPR:!!ex.isPR});
+  }
+  return results.sort((a,b)=>a.date.localeCompare(b.date));
+}
+function aggregateLiftHistory(history,range){
+  if(!history.length)return{points:[],unit:'kg',metric:'Avg weight'};
+  const unit=history[history.length-1].unit;
+  const metric=history[history.length-1].metric;
+  const buckets={};
+  history.forEach(h=>{
+    const key=range==='month'?h.date.slice(0,7):weekStartKey(h.date);
+    if(!buckets[key])buckets[key]={sum:0,n:0,pr:false,date:key};
+    buckets[key].sum+=h.avg;
+    buckets[key].n+=1;
+    if(h.isPR)buckets[key].pr=true;
+  });
+  const keys=Object.keys(buckets).sort();
+  const maxBuckets=range==='month'?18:16;
+  const sliced=keys.slice(-maxBuckets);
+  const points=sliced.map(key=>{
+    const b=buckets[key];
+    return{
+      y:Math.round((b.sum/b.n)*10)/10,
+      date:key,
+      label:range==='month'?monthBucketLabel(key):weekBucketLabel(key),
+      pr:b.pr
+    };
+  });
+  return{points,unit,metric};
+}
+function buildLiftChartInner(dayKey){
+  const dayLabel=LIFT_CHART_DAYS[dayKey];
+  const opts=getLiftChartExercises(dayLabel);
+  const st=_liftChartState[dayKey];
+  if(!opts.length)return'<div style="color:var(--dim);font-size:13px;padding:16px;text-align:center">No exercises in this category</div>';
+  if(!st.ex||!opts.includes(st.ex))st.ex=opts[0];
+  const hist=getExAvgLoadHistory(st.ex);
+  const agg=aggregateLiftHistory(hist,st.range||'week');
+  if(agg.points.length<2){
+    return`<div style="color:var(--dim);font-size:13px;padding:20px;text-align:center">${hist.length?`Need at least 2 ${st.range==='month'?'months':'weeks'} of logs for ${escHtml(st.ex)}`:`Log ${escHtml(st.ex)} at least twice to see a trend`}</div>
+      <div class="lift-chart-meta">${agg.metric} · ${st.range==='month'?'Monthly':'Weekly'} average · ${hist.length} session${hist.length===1?'':'s'} logged</div>`;
+  }
+  const last=agg.points[agg.points.length-1];
+  const first=agg.points[0];
+  const delta=Math.round((last.y-first.y)*10)/10;
+  const deltaTxt=delta>0?`+${delta}`:String(delta);
+  return`<div class="chart-wrap"><div class="chart-label">${agg.metric} (${agg.unit})</div>${buildSVG(agg.points,'var(--cyan)',agg.unit)}</div>
+    <div class="lift-chart-meta">Latest ${last.y}${agg.unit} · change over range ${deltaTxt}${agg.unit} · ${hist.length} sessions · ${st.range==='month'?'monthly':'weekly'} buckets</div>`;
+}
+function refreshLiftChart(dayKey){
+  const el=document.getElementById('lift-chart-'+dayKey);if(!el)return;
+  el.innerHTML=buildLiftChartInner(dayKey);
+}
+function onLiftChartExChange(dayKey,value){
+  _liftChartState[dayKey].ex=value;
+  refreshLiftChart(dayKey);
+}
+function onLiftChartRangeChange(dayKey,value){
+  _liftChartState[dayKey].range=value;
+  refreshLiftChart(dayKey);
+}
+function renderLiftProgressCharts(){
+  const cards=['push','pull','legs'].map(key=>{
+    const dayLabel=LIFT_CHART_DAYS[key];
+    const opts=getLiftChartExercises(dayLabel);
+    const st=_liftChartState[key];
+    if(!st.ex||!opts.includes(st.ex))st.ex=opts[0]||'';
+    const title=dayLabel.replace(' day','');
+    return`<div class="card" style="margin-bottom:12px">
+      <div class="cl">${title} progress</div>
+      <div class="ct" style="margin-bottom:8px">Average load across sets (weight × reps)</div>
+      <div class="lift-chart-row">
+        <select class="foodsel" aria-label="${title} exercise" onchange="onLiftChartExChange('${key}',this.value)">
+          ${opts.map(n=>`<option value="${escHtml(n)}"${n===st.ex?' selected':''}>${escHtml(n)}</option>`).join('')}
+        </select>
+        <select class="foodsel" style="flex:0 0 120px" aria-label="${title} time range" onchange="onLiftChartRangeChange('${key}',this.value)">
+          <option value="week"${st.range==='week'?' selected':''}>By week</option>
+          <option value="month"${st.range==='month'?' selected':''}>By month</option>
+        </select>
+      </div>
+      <div id="lift-chart-${key}">${buildLiftChartInner(key)}</div>
+    </div>`;
+  }).join('');
+  return`<div class="card" style="margin-bottom:12px;border-color:var(--cbr)">
+      <div class="cl">Lift trends</div>
+      <div class="cs">Pick an exercise per day type. Y-axis = session average weight (volume-weighted by reps). X-axis = week or month averages. Running / cardio is excluded.</div>
+    </div>`+cards;
+}
+
 /* ===== RENDER PROGRESS ===== */
 function renderProgress(){
   const cutoff=(()=>{const d=new Date();d.setDate(d.getDate()-28);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})();
@@ -1993,6 +2461,8 @@ function renderProgress(){
     </div>
     <div id="bodydiag-exlist">${renderProgressMuscleExList()}</div>
   </div>`;
+
+  html+=renderLiftProgressCharts();
 
   const correlation=getFoodSymptomCorrelation();
   if(correlation.available){
@@ -3200,6 +3670,7 @@ function runMigration(){
   }
 }
 runMigration();
+handleStravaOAuthReturn();
 (()=>{const bw=lsG('bar_weights')||{};if(!bw.smith){bw.smith='15';lsS('bar_weights',bw);}})();
 checkStorage();
 checkUpdate();

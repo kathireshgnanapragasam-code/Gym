@@ -19,6 +19,10 @@ T('no must/optional exercise tiers in UI', !src.includes('MUST') && !src.include
 T('workout date picker for catch-up logging', src.includes('function setLogDate') && src.includes('function activeDateKey') && src.includes('id="log-date"'));
 T('run log with optional Strava link', src.includes('function saveRunLog') && src.includes('function parseStravaActivityId') && src.includes('run-strava'));
 T('run captures distance pace elev calories', src.includes('run-elev-gain') && src.includes('run-elev-loss') && src.includes('estimateRunCalories') && src.includes('getBodyForCalcs') && src.includes('ACSM'));
+T('strava link autofill via API connect', src.includes('function fetchAndFillFromStravaLink') && src.includes('function startStravaConnect') && src.includes('function ensureStravaAccessToken'));
+T('cardio day is Strava-focused', src.includes('function renderCardioDaySection') && src.includes('function saveCardioDay') && src.includes('Log cardio day'));
+T('no separate Cardio app tab', !/>Cardio<\/button>/.test(src) && src.includes('data-t="4">Recipes</button>'));
+T('lift progress charts on Progress tab', src.includes('function renderLiftProgressCharts') && src.includes('function sessionAvgLoad') && src.includes('onLiftChartExChange') && src.includes('By week'));
 T('photo recipe save pipeline exists', src.includes('function saveRecipeFromPhoto') && src.includes('function onRecipePhotoSelected') && src.includes('compressImageFile'));
 
 /* Program */
