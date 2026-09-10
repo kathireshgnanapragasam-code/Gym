@@ -7,6 +7,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#E0A339">
 <link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.jpg" type="image/jpeg">
+<link rel="apple-touch-icon" href="icon.jpg">
+<meta name="apple-mobile-web-app-title" content="Gym">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <title>Gym v1.0</title>
@@ -434,7 +437,17 @@ function showStorageFailWarning(){
   document.body.insertAdjacentHTML('afterbegin','<div id="storage-fail-banner" style="position:relative;z-index:998;background:var(--rbg);color:var(--red);font-size:13px;font-weight:700;padding:9px 14px;text-align:center">&#x26A0; Your device is out of storage space \u2014 this change may NOT have saved. Free up space or export/share your data now.</div>');
 }
 function getProfile(){
-  return lsG('user_profile')||{targets:{protein:140,kcal:2200,carbs:220,fat:65},weight:71,heightCm:175,goalWeight:70,goalBF:14,trainingDaysPerWeek:4};
+  return lsG('user_profile')||{targets:{protein:140,kcal:2200,carbs:220,fat:65},weight:71,heightCm:175,bodyFat:20,goalWeight:70,goalBF:14,trainingDaysPerWeek:4};
+}
+function getBodyForCalcs(){
+  const prof=getProfile();
+  const stats=lsG('bstats')||[];
+  const latest=[...stats].reverse().find(s=>s.wt||s.bf);
+  const weightKg=parseFloat(latest?.wt)||parseFloat(prof.weight)||71;
+  const bodyFatPct=parseFloat(latest?.bf)||parseFloat(prof.bodyFat)||20;
+  const heightCm=parseFloat(prof.heightCm)||175;
+  const leanMassKg=Math.round(weightKg*(1-bodyFatPct/100)*10)/10;
+  return{weightKg,bodyFatPct,heightCm,leanMassKg,source:latest?.wt?'latest body log':'profile defaults'};
 }
 function saveProfile(p){lsS('user_profile',p);}
 function saveTargets(){
@@ -1316,7 +1329,7 @@ function showStickyBtn(show,dl,seqIdx){
     b.onclick=()=>{if(b.disabled)return;b.disabled=true;b.style.opacity='.6';saveSession(dl,seqIdx);};
   }
 }
-/* ===== RUN + STRAVA LINK ===== */
+/* ===== RUN + STRAVA METRICS ===== */
 function parseStravaActivityId(url){
   const m=String(url||'').match(/strava\.com\/activities\/(\d+)/i);
   return m?m[1]:null;
@@ -1327,22 +1340,102 @@ function deleteRun(){
   lsDel('run:'+activeDateKey());
   renderToday();
 }
-function saveRunLog(){
-  const dk=activeDateKey();
+/* ACSM running equation (gross):
+   VO2 ml/kg/min = 0.2*S + 0.9*S*G + 3.5
+   S = speed m/min, G = grade as decimal (elev gain / distance).
+   kcal = VO2 * bodyMassKg / 1000 * 5 * minutes
+   Body fat is not in ACSM directly — we use total body weight (standard). Lean mass is shown for context. */
+function estimateRunCalories({km,mins,elevGainM,weightKg}){
+  km=parseFloat(km)||0;mins=parseFloat(mins)||0;elevGainM=parseFloat(elevGainM)||0;weightKg=parseFloat(weightKg)||0;
+  if(km<=0||mins<=0||weightKg<=0)return{available:false,reason:'Need distance, moving time, and body weight'};
+  const distM=km*1000;
+  const speedMPerMin=distM/mins; /* m/min */
+  const grade=Math.max(0,elevGainM)/distM; /* fractional; downhill not modelled by ACSM */
+  const vo2=0.2*speedMPerMin+0.9*speedMPerMin*grade+3.5;
+  const kcalPerMin=vo2*weightKg/1000*5;
+  const gross=Math.round(kcalPerMin*mins);
+  const net=Math.round(Math.max(0,(vo2-3.5)*weightKg/1000*5*mins));
+  const ruleOfThumb=Math.round(km*weightKg*1.036); /* ~1 kcal/kg/km common heuristic */
+  return{
+    available:true,
+    grossKcal:gross,
+    netKcal:net,
+    ruleOfThumbKcal:ruleOfThumb,
+    vo2:Math.round(vo2*10)/10,
+    speedKmH:Math.round((km/(mins/60))*100)/100,
+    gradePct:Math.round(grade*1000)/10,
+    formula:'ACSM running VO\u2082'
+  };
+}
+function paceFromKmMins(km,mins){
+  km=parseFloat(km);mins=parseFloat(mins);
+  if(!(km>0&&mins>0))return null;
+  return Math.round((mins/km)*100)/100;
+}
+function fmtPace(minPerKm){
+  if(minPerKm==null||!(minPerKm>0))return'\u2014';
+  const m=Math.floor(minPerKm);
+  const s=Math.round((minPerKm-m)*60);
+  return m+':'+String(s).padStart(2,'0')+'/km';
+}
+function readRunFormFields(){
   const km=parseFloat(document.getElementById('run-km')?.value);
   const mins=parseFloat(document.getElementById('run-mins')?.value);
+  let pace=parseFloat(document.getElementById('run-pace')?.value);
+  const elevGain=parseFloat(document.getElementById('run-elev-gain')?.value);
+  const elevLoss=parseFloat(document.getElementById('run-elev-loss')?.value);
   const url=(document.getElementById('run-strava')?.value||'').trim();
   const note=(document.getElementById('run-note')?.value||'').trim();
-  if(!km&&!mins&&!url){alert('Enter distance, time, or a Strava link.');return;}
-  const pace=(km>0&&mins>0)?(mins/km):null;
+  if(!(pace>0)&&km>0&&mins>0)pace=paceFromKmMins(km,mins);
+  return{km,mins,pace,elevGain,elevLoss,url,note};
+}
+function updateRunCalPreview(){
+  const f=readRunFormFields();
+  const body=getBodyForCalcs();
+  const est=estimateRunCalories({km:f.km,mins:f.mins,elevGainM:f.elevGain,weightKg:body.weightKg});
+  const paceEl=document.getElementById('run-pace');
+  if(paceEl&&!(parseFloat(paceEl.value)>0)&&f.km>0&&f.mins>0){
+    /* don't fight manual pace edits — only autofill when empty */
+  }
+  if(paceEl&&!paceEl.dataset.touched&&f.km>0&&f.mins>0){
+    paceEl.value=String(paceFromKmMins(f.km,f.mins));
+  }
+  const el=document.getElementById('run-cal-preview');if(!el)return;
+  if(!est.available){
+    el.innerHTML=`<div style="font-size:12px;color:var(--dim)">Enter distance + moving time to estimate calories · using ${body.weightKg}kg (${body.bodyFatPct}% BF, lean ${body.leanMassKg}kg) from ${body.source}</div>`;
+    return;
+  }
+  el.innerHTML=`<div style="font-size:13px;color:var(--txt);line-height:1.5">
+      <b style="color:var(--cyan)">${est.grossKcal} kcal</b> estimated (ACSM) · net ~${est.netKcal} kcal above rest<br>
+      <span style="color:var(--mut);font-size:11px">${body.weightKg}kg · ${body.bodyFatPct}% BF · ${est.speedKmH} km/h · grade ~${est.gradePct}% from elev gain · ${body.source}</span>
+    </div>`;
+}
+function onRunPaceTouched(){
+  const el=document.getElementById('run-pace');if(el)el.dataset.touched='1';
+  updateRunCalPreview();
+}
+function saveRunLog(){
+  const dk=activeDateKey();
+  const f=readRunFormFields();
+  if(!f.km&&!f.mins&&!f.url){alert('Enter distance, moving time, or a Strava link.');return;}
+  const body=getBodyForCalcs();
+  const pace=f.pace||paceFromKmMins(f.km,f.mins);
+  const est=estimateRunCalories({km:f.km,mins:f.mins,elevGainM:f.elevGain,weightKg:body.weightKg});
   const run={
     date:dk,
-    km:km||null,
-    mins:mins||null,
-    paceMinPerKm:pace?Math.round(pace*100)/100:null,
-    stravaUrl:url||null,
-    stravaId:parseStravaActivityId(url),
-    note:note||null,
+    km:f.km||null,
+    mins:f.mins||null,
+    movingTimeMin:f.mins||null,
+    paceMinPerKm:pace||null,
+    elevGainM:f.elevGain||0,
+    elevLossM:f.elevLoss||0,
+    elevNetM:(f.elevGain||0)-(f.elevLoss||0),
+    calories:est.available?est.grossKcal:null,
+    caloriesNet:est.available?est.netKcal:null,
+    caloriesMeta:est.available?{formula:est.formula,vo2:est.vo2,speedKmH:est.speedKmH,gradePct:est.gradePct,weightKg:body.weightKg,bodyFatPct:body.bodyFatPct,leanMassKg:body.leanMassKg}:null,
+    stravaUrl:f.url||null,
+    stravaId:parseStravaActivityId(f.url),
+    note:f.note||null,
     savedAt:new Date().toISOString()
   };
   lsS('run:'+dk,run);
@@ -1356,18 +1449,27 @@ function openStrava(){
 function renderRunCard(){
   const dk=activeDateKey();
   const run=getRun(dk);
+  const body=getBodyForCalcs();
   if(run){
-    const pace=run.paceMinPerKm?` · ${run.paceMinPerKm} min/km`:'';
-    const dist=run.km!=null?`${run.km} km`:'';
-    const time=run.mins!=null?`${run.mins} min`:'';
-    const bits=[dist,time].filter(Boolean).join(' · ');
+    const bits=[
+      run.km!=null?`${run.km} km`:null,
+      run.mins!=null?`${run.mins} min moving`:null,
+      run.paceMinPerKm!=null?fmtPace(run.paceMinPerKm):null,
+      run.calories!=null?`${run.calories} kcal`:null
+    ].filter(Boolean).join(' · ');
+    const elev=[
+      run.elevGainM?`+${run.elevGainM}m`:null,
+      run.elevLossM?`\u2212${run.elevLossM}m`:null
+    ].filter(Boolean).join(' / ');
     return `<div class="card success" id="run-card" style="margin-bottom:10px">
       <div class="cl">Run logged</div>
-      <div class="ct" style="color:var(--grn);margin-bottom:4px">${bits||'Run'}${pace}</div>
+      <div class="ct" style="color:var(--grn);margin-bottom:4px">${bits||'Run'}</div>
+      ${elev?`<div style="font-size:13px;color:var(--mut);margin-bottom:6px">Elevation ${elev}${run.elevNetM!=null?` · net ${run.elevNetM>0?'+':''}${run.elevNetM}m`:''}</div>`:''}
+      ${run.caloriesMeta?`<div style="font-size:11px;color:var(--dim);margin-bottom:6px">${run.caloriesMeta.formula} · ${run.caloriesMeta.weightKg}kg @ ${run.caloriesMeta.bodyFatPct}% BF</div>`:''}
       ${run.stravaUrl?`<a href="${escHtml(run.stravaUrl)}" target="_blank" rel="noopener" style="font-size:13px;color:var(--cyan);font-weight:600">Open on Strava &#x2197;</a>`:'<div class="cs">No Strava link attached</div>'}
       ${run.note?`<div style="font-size:12px;color:var(--mut);margin-top:8px;font-style:italic">"${escHtml(run.note)}"</div>`:''}
       <div style="display:flex;gap:8px;margin-top:10px">
-        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="document.getElementById('run-edit').style.display='block'">Edit</button>
+        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="document.getElementById('run-edit').style.display='block';updateRunCalPreview()">Edit</button>
         <button class="btn btn-ghost btn-sm" style="flex:1;color:var(--red)" onclick="deleteRun()">Delete</button>
       </div>
       <div id="run-edit" style="display:none;margin-top:12px">${renderRunForm(run)}</div>
@@ -1376,20 +1478,28 @@ function renderRunCard(){
   return `<div class="card" id="run-card" style="margin-bottom:10px">
     <div class="cl">Run</div>
     <div class="ct" style="margin-bottom:4px">Log a run for ${fmtLogDateLabel(dk)}</div>
-    <div class="cs" style="margin-bottom:12px">Paste a Strava activity link if you have one. Full auto-import needs a Strava API backend later — link + manual distance/time works now.</div>
+    <div class="cs" style="margin-bottom:10px">Copy distance, moving time, pace, and elevation from Strava (or your Xiaomi/Zepp summary). Calories are estimated with the ACSM running formula using your body weight (${body.weightKg}kg, ${body.bodyFatPct}% BF).</div>
+    <div class="nt ni" style="margin-bottom:12px">Xiaomi Watch: connect it to Strava in the Mi Fitness / Zepp app if you can, then paste numbers here. Direct watch sync isn\u2019t available in this browser app.</div>
     ${renderRunForm(null)}
   </div>`;
 }
 function renderRunForm(run){
   run=run||{};
-  return `<div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:120px;font-weight:500">Distance (km)</div>
-      <input class="sinput" id="run-km" type="number" inputmode="decimal" step="0.01" placeholder="5.2" value="${run.km??''}" style="width:110px"></div>
-    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:120px;font-weight:500">Time (min)</div>
-      <input class="sinput" id="run-mins" type="number" inputmode="decimal" step="0.1" placeholder="28" value="${run.mins??''}" style="width:110px"></div>
-    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:120px;font-weight:500">Strava link</div>
+  return `<div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">Distance (km)</div>
+      <input class="sinput" id="run-km" type="number" inputmode="decimal" step="0.01" placeholder="5.20" value="${run.km??''}" style="width:110px" oninput="updateRunCalPreview()"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">Moving time (min)</div>
+      <input class="sinput" id="run-mins" type="number" inputmode="decimal" step="0.1" placeholder="28.5" value="${run.mins??run.movingTimeMin??''}" style="width:110px" oninput="updateRunCalPreview()"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">Avg pace (decimal min/km)</div>
+      <input class="sinput" id="run-pace" type="number" inputmode="decimal" step="0.01" placeholder="5.5 = 5:30" value="${run.paceMinPerKm??''}" style="width:110px" oninput="onRunPaceTouched()"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">Elev gain (m)</div>
+      <input class="sinput" id="run-elev-gain" type="number" inputmode="decimal" step="1" placeholder="45" value="${run.elevGainM??''}" style="width:110px" oninput="updateRunCalPreview()"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">Elev loss (m)</div>
+      <input class="sinput" id="run-elev-loss" type="number" inputmode="decimal" step="1" placeholder="40" value="${run.elevLossM??''}" style="width:110px" oninput="updateRunCalPreview()"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">Strava link</div>
       <input class="sinput" id="run-strava" type="url" placeholder="https://www.strava.com/activities/..." value="${escHtml(run.stravaUrl||'')}" style="width:160px;flex:1"></div>
-    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:120px;font-weight:500">Note</div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">Note</div>
       <input class="sinput" id="run-note" type="text" placeholder="easy / intervals..." value="${escHtml(run.note||'')}" style="width:160px;flex:1"></div>
+    <div id="run-cal-preview" style="margin:10px 0;padding:10px 12px;background:var(--c2);border-radius:10px;border:1px solid var(--c3)"></div>
     <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
       <button class="btn btn-amb btn-sm" style="flex:1" onclick="saveRunLog()">Save run</button>
       <button class="btn btn-ghost btn-sm" style="flex:1" onclick="openStrava()">Open Strava</button>
@@ -1725,6 +1835,7 @@ function renderToday(){
   </div>`;
 
   document.getElementById('p0').innerHTML=html;
+  updateRunCalPreview();
   injectWeather();
   if(gd&&gd.label==='Free session'&&_freeExPickerMode==='muscle')mountFreeMuscleDiagram();
   const curWs=gd?WS[gd.label]:null;
@@ -1835,8 +1946,8 @@ function renderProgress(){
     <div class="pstat"><div class="pval" style="color:${miss>0?'var(--red)':'var(--cyan)'}">${miss}</div><div class="plbl">missed</div></div>
   </div>`;
 
-  html+=`<div class="card"><div class="cl">Body stats &mdash; weekly</div><div class="ct" style="margin-bottom:4px">Samsung Watch data</div>
-    <div class="cs" style="margin-bottom:12px">Log once a week, same day and time</div>
+  html+=`<div class="card"><div class="cl">Body stats &mdash; weekly</div><div class="ct" style="margin-bottom:4px">Xiaomi Watch / scale (or manual)</div>
+    <div class="cs" style="margin-bottom:12px">Log once a week, same day and time. Weight + body fat here feed run calorie estimates.</div>
     ${latest?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
       ${[['Weight',latest.wt,'kg'],['Body fat',latest.bf,'%'],['Muscle',latest.mm,'kg'],['Fat mass',latest.fm,'kg'],['Body water',latest.bw,latest.bwUnit||'%']].filter(([,v])=>v).map(([l,v,u])=>`<div style="background:var(--c2);border:1px solid var(--c3);border-radius:12px;padding:10px;text-align:center;flex:1;min-width:70px"><div style="font-size:18px;font-weight:800;font-family:'Barlow',sans-serif;color:var(--cyan)">${v}${u}</div><div style="font-size:10px;color:var(--mut);margin-top:2px;font-weight:600">${l}</div></div>`).join('')}
     </div>`:''}
@@ -2716,7 +2827,13 @@ function renderHistory(){
       ${recentRuns.map(r=>`<div class="hitem"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
         <div>
           <div style="font-size:15px;font-weight:700;font-family:'Barlow',sans-serif">${r.date}</div>
-          <div style="font-size:13px;color:var(--mut)">${[r.km!=null?r.km+' km':null,r.mins!=null?r.mins+' min':null,r.paceMinPerKm?r.paceMinPerKm+' min/km':null].filter(Boolean).join(' · ')||'Run'}</div>
+          <div style="font-size:13px;color:var(--mut)">${[
+            r.km!=null?r.km+' km':null,
+            r.mins!=null?r.mins+' min':null,
+            r.paceMinPerKm!=null?fmtPace(r.paceMinPerKm):null,
+            r.calories!=null?r.calories+' kcal':null,
+            r.elevGainM?('↑'+r.elevGainM+'m'):null
+          ].filter(Boolean).join(' · ')||'Run'}</div>
         </div>
         ${r.stravaUrl?`<a href="${escHtml(r.stravaUrl)}" target="_blank" rel="noopener" class="pill pi">Strava</a>`:'<span class="pill pd">Manual</span>'}
       </div></div>`).join('')}

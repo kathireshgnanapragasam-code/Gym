@@ -1,6 +1,6 @@
 {
   "name": "Gym Progress Tracker",
-  "short_name": "GPT",
+  "short_name": "Gym",
   "description": "Personal gym tracker — workouts, food, recipes, progress",
   "start_url": ".",
   "display": "standalone",
@@ -9,10 +9,16 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "src": "icon.jpg",
+      "sizes": "1024x1024",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "icon.jpg",
+      "sizes": "1024x1024",
+      "type": "image/jpeg",
+      "purpose": "maskable"
     }
   ]
 }

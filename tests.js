@@ -18,6 +18,7 @@ T('no wife app references in UI copy', !/your wife/i.test(src));
 T('no must/optional exercise tiers in UI', !src.includes('MUST') && !src.includes('Must do') && !src.includes("priority:'must'"));
 T('workout date picker for catch-up logging', src.includes('function setLogDate') && src.includes('function activeDateKey') && src.includes('id="log-date"'));
 T('run log with optional Strava link', src.includes('function saveRunLog') && src.includes('function parseStravaActivityId') && src.includes('run-strava'));
+T('run captures distance pace elev calories', src.includes('run-elev-gain') && src.includes('run-elev-loss') && src.includes('estimateRunCalories') && src.includes('getBodyForCalcs') && src.includes('ACSM'));
 T('photo recipe save pipeline exists', src.includes('function saveRecipeFromPhoto') && src.includes('function onRecipePhotoSelected') && src.includes('compressImageFile'));
 
 /* Program */
