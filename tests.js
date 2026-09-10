@@ -15,7 +15,8 @@ T('branded Gym v1.0', /Gym v1\.0/.test(src) && src.includes('<div class="ht">Gym
 T('no Roshan branding', !/Roshan Fitness/.test(src));
 T('no Crohn / seton / infliximab medical copy', !/Crohn|Seton|infliximab|gastroenterologist/i.test(src));
 T('no wife app references in UI copy', !/your wife/i.test(src));
-T('Recipes tab replaces Flare', src.includes('data-t="4">Recipes') && src.includes('function renderRecipes'));
+T('no must/optional exercise tiers in UI', !src.includes('MUST') && !src.includes('Must do') && !src.includes("priority:'must'"));
+T('end-of-day logging helpers', src.includes('function setHasData') && src.includes('function markFilledSetsDone') && src.includes('Log today'));
 T('photo recipe save pipeline exists', src.includes('function saveRecipeFromPhoto') && src.includes('function onRecipePhotoSelected') && src.includes('compressImageFile'));
 
 /* Program */

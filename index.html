@@ -236,7 +236,7 @@ textarea.genin{resize:none}
 <div class="pnl" id="p3"></div>
 <div class="pnl" id="p4"></div>
 <div class="sticky-wrap" id="sticky-wrap">
-  <button class="sticky-save" id="sticky-btn">Save &amp; Finish Workout</button>
+  <button class="sticky-save" id="sticky-btn">Log today’s workout</button>
 </div>
 <div id="save-toast" class="confbox" style="position:fixed;left:16px;right:16px;bottom:90px;z-index:50;display:none"></div>
 <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(this)">
@@ -249,48 +249,48 @@ textarea.genin{resize:none}
 const SEQ=['Push day','Pull day','Legs day','Cardio + core'];
 const DAYS=[
   {label:'Push day',focus:'Chest \u00b7 Shoulders \u00b7 Triceps (no bench)',time:'Gym',ex:[
-    {n:'Incline DB press',s:4,r:'8\u201310',nt:'Main chest press \u2014 no flat bench needed',priority:'must',compound:true,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Upper chest'],secondaryMuscles:['Front delts','Triceps'],tip:'Elbows at roughly 45 degrees, not flared to 90 \u2014 that angle shifts work to upper chest.'},
-    {n:'Machine chest press',s:3,r:'10\u201312',nt:'Stable pressing without a barbell bench',priority:'must',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Chest'],secondaryMuscles:['Triceps','Front delts'],tip:'Drive handles forward without locking out hard \u2014 keep tension on the chest.'},
-    {n:'Machine chest fly',s:3,r:'12\u201315',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Chest'],secondaryMuscles:[],tip:'Squeeze at the peak, control the return \u2014 don\u2019t let the stack slam.'},
-    {n:'Seated DB shoulder press',s:3,r:'8\u201310',nt:'',priority:'must',compound:true,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Front delts'],secondaryMuscles:['Triceps','Side delts'],tip:'Press slightly forward, not straight overhead \u2014 easier on the shoulder joint.'},
-    {n:'Lateral raises',s:3,r:'12\u201315',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Side delts'],secondaryMuscles:[],tip:'Lead with elbows, stop at shoulder height \u2014 no swinging.'},
-    {n:'Cable tricep pushdown',s:3,r:'10\u201312',nt:'',priority:'must',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Triceps (lateral/medial)'],secondaryMuscles:[],tip:'Elbows pinned at your sides \u2014 if they drift forward you\u2019re using shoulders.'},
-    {n:'Overhead tricep extension',s:3,r:'10\u201312',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'DB weight (one hand)',primaryMuscles:['Triceps (long head)'],secondaryMuscles:[],tip:'Elbows point forward, not flared \u2014 keeps tension on the long head.'}
+    {n:'Incline DB press',s:4,r:'8\u201310',nt:'Main chest press \u2014 no flat bench needed',priority:'normal',compound:true,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Upper chest'],secondaryMuscles:['Front delts','Triceps'],tip:'Elbows at roughly 45 degrees, not flared to 90 \u2014 that angle shifts work to upper chest.'},
+    {n:'Machine chest press',s:3,r:'10\u201312',nt:'Stable pressing without a barbell bench',priority:'normal',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Chest'],secondaryMuscles:['Triceps','Front delts'],tip:'Drive handles forward without locking out hard \u2014 keep tension on the chest.'},
+    {n:'Machine chest fly',s:3,r:'12\u201315',nt:'',priority:'normal',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Chest'],secondaryMuscles:[],tip:'Squeeze at the peak, control the return \u2014 don\u2019t let the stack slam.'},
+    {n:'Seated DB shoulder press',s:3,r:'8\u201310',nt:'',priority:'normal',compound:true,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Front delts'],secondaryMuscles:['Triceps','Side delts'],tip:'Press slightly forward, not straight overhead \u2014 easier on the shoulder joint.'},
+    {n:'Lateral raises',s:3,r:'12\u201315',nt:'',priority:'normal',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Side delts'],secondaryMuscles:[],tip:'Lead with elbows, stop at shoulder height \u2014 no swinging.'},
+    {n:'Cable tricep pushdown',s:3,r:'10\u201312',nt:'',priority:'normal',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Triceps (lateral/medial)'],secondaryMuscles:[],tip:'Elbows pinned at your sides \u2014 if they drift forward you\u2019re using shoulders.'},
+    {n:'Overhead tricep extension',s:3,r:'10\u201312',nt:'',priority:'normal',compound:false,inputType:'weight',wlabel:'DB weight (one hand)',primaryMuscles:['Triceps (long head)'],secondaryMuscles:[],tip:'Elbows point forward, not flared \u2014 keeps tension on the long head.'}
   ]},
   {label:'Pull day',focus:'Back \u00b7 Biceps \u00b7 Rear delts',time:'Gym',ex:[
-    {n:'Pull-ups or lat pulldown',s:4,r:'\u2014',nt:'Pick one below',priority:'must',noweight:true,inputType:'choice',primaryMuscles:['Lats'],secondaryMuscles:['Biceps','Mid-back'],
+    {n:'Pull-ups or lat pulldown',s:4,r:'\u2014',nt:'Pick one below',priority:'normal',noweight:true,inputType:'choice',primaryMuscles:['Lats'],secondaryMuscles:['Biceps','Mid-back'],
      choiceOptions:[{name:'Pull-ups (unassisted)',r:'Max reps',inputType:'bodyweight',primaryMuscles:['Lats'],secondaryMuscles:['Biceps','Mid-back']},{name:'Lat pulldown',r:'8\u201312',inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Lats'],secondaryMuscles:['Biceps']}]},
-    {n:'Seated cable row',s:4,r:'8\u201312',nt:'',priority:'must',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Mid-back'],secondaryMuscles:['Lats','Biceps','Traps'],tip:'Chest up, pull to lower ribs \u2014 if lower back rounds, drop the weight.'},
-    {n:'Single arm DB row',s:3,r:'10\u201312',nt:'',priority:'optional',compound:true,inputType:'weight',wlabel:'Dumbbell weight (one hand)',primaryMuscles:['Mid-back'],secondaryMuscles:['Lats','Biceps'],tip:'Brace free hand, keep torso still \u2014 don\u2019t twist the weight up.'},
-    {n:'Face pulls',s:3,r:'12\u201315',nt:'Never skip \u2014 balances all the pressing',priority:'must',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Rear delts','Traps'],secondaryMuscles:['Rotator cuff'],tip:'Pull to eye level and rotate hands outward at the end.'},
-    {n:'Dumbbell curl (alternating)',s:3,r:'10\u201312',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Biceps (long head)'],secondaryMuscles:[],tip:'Full supination at the top \u2014 rotate palm up as you curl.'},
-    {n:'Hammer curls',s:3,r:'10\u201312',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Brachialis'],secondaryMuscles:['Biceps','Forearms'],tip:'Neutral grip the whole rep \u2014 thumbs up.'},
-    {n:'Dumbbell shrugs',s:3,r:'12\u201315',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Traps'],secondaryMuscles:[],tip:'Straight up and down \u2014 no rolling the shoulders.'}
+    {n:'Seated cable row',s:4,r:'8\u201312',nt:'',priority:'normal',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Mid-back'],secondaryMuscles:['Lats','Biceps','Traps'],tip:'Chest up, pull to lower ribs \u2014 if lower back rounds, drop the weight.'},
+    {n:'Single arm DB row',s:3,r:'10\u201312',nt:'',priority:'normal',compound:true,inputType:'weight',wlabel:'Dumbbell weight (one hand)',primaryMuscles:['Mid-back'],secondaryMuscles:['Lats','Biceps'],tip:'Brace free hand, keep torso still \u2014 don\u2019t twist the weight up.'},
+    {n:'Face pulls',s:3,r:'12\u201315',nt:'Never skip \u2014 balances all the pressing',priority:'normal',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Rear delts','Traps'],secondaryMuscles:['Rotator cuff'],tip:'Pull to eye level and rotate hands outward at the end.'},
+    {n:'Dumbbell curl (alternating)',s:3,r:'10\u201312',nt:'',priority:'normal',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Biceps (long head)'],secondaryMuscles:[],tip:'Full supination at the top \u2014 rotate palm up as you curl.'},
+    {n:'Hammer curls',s:3,r:'10\u201312',nt:'',priority:'normal',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Brachialis'],secondaryMuscles:['Biceps','Forearms'],tip:'Neutral grip the whole rep \u2014 thumbs up.'},
+    {n:'Dumbbell shrugs',s:3,r:'12\u201315',nt:'',priority:'normal',compound:false,inputType:'weight',wlabel:'Per dumbbell (each hand)',primaryMuscles:['Traps'],secondaryMuscles:[],tip:'Straight up and down \u2014 no rolling the shoulders.'}
   ]},
   {label:'Legs day',focus:'Quads \u00b7 Hamstrings \u00b7 Glutes \u00b7 Calves (no squats / deadlifts)',time:'Gym',ex:[
-    {n:'Leg press',s:4,r:'10\u201315',nt:'Main lower-body compound without a squat',priority:'must',compound:true,inputType:'weight',wlabel:'Stack / sled weight',primaryMuscles:['Quads'],secondaryMuscles:['Glutes','Hamstrings'],tip:'Knees track over toes, soft lockout at the top \u2014 no bouncing out of the hole.'},
-    {n:'Walking lunges',s:3,r:'10 each',nt:'Extra leg volume without a back squat',priority:'must',compound:true,inputType:'weight',wlabel:'Per dumbbell (each hand) \u2014 or 0 for bodyweight',primaryMuscles:['Quads'],secondaryMuscles:['Glutes','Hamstrings'],tip:'Long strides, torso upright \u2014 front knee tracks over the mid-foot.'},
-    {n:'Leg extension (machine)',s:3,r:'12\u201315',nt:'',priority:'must',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Quads'],secondaryMuscles:[],tip:'Controlled tempo, brief pause at the top.'},
-    {n:'Seated leg curl',s:3,r:'12\u201315',nt:'',priority:'must',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Hamstrings'],secondaryMuscles:[],tip:'Full range, no bouncing out of the stretch.'},
-    {n:'Machine hip thrust',s:3,r:'10\u201312',nt:'Glute focus without a barbell hinge',priority:'must',compound:true,inputType:'weight',wlabel:'Stack / plate weight',primaryMuscles:['Glutes'],secondaryMuscles:['Hamstrings'],tip:'Drive through heels, squeeze at the top, don\u2019t overarch the lower back.'},
-    {n:'Calf raises',s:4,r:'12\u201320',nt:'',priority:'must',compound:false,inputType:'weight',wlabel:'Add kg if weighted',primaryMuscles:['Calves'],secondaryMuscles:[],tip:'Pause at the top, full stretch at the bottom.'},
-    {n:'Hip abduction machine',s:3,r:'12\u201315',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Glute medius/minimus'],secondaryMuscles:[],tip:'Controlled push out and return.'},
-    {n:'Hip adduction machine',s:3,r:'12\u201315',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Adductors'],secondaryMuscles:[],tip:'Same machine as abduction, opposite direction.'},
-    {n:'Cable pull-through',s:3,r:'10\u201312',nt:'Hip hinge pattern without a deadlift bar',priority:'optional',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Lower back'],secondaryMuscles:['Glutes','Hamstrings'],tip:'Hips back, not down \u2014 this is a hinge, not a squat.'}
+    {n:'Leg press',s:4,r:'10\u201315',nt:'Main lower-body compound without a squat',priority:'normal',compound:true,inputType:'weight',wlabel:'Stack / sled weight',primaryMuscles:['Quads'],secondaryMuscles:['Glutes','Hamstrings'],tip:'Knees track over toes, soft lockout at the top \u2014 no bouncing out of the hole.'},
+    {n:'Walking lunges',s:3,r:'10 each',nt:'Extra leg volume without a back squat',priority:'normal',compound:true,inputType:'weight',wlabel:'Per dumbbell (each hand) \u2014 or 0 for bodyweight',primaryMuscles:['Quads'],secondaryMuscles:['Glutes','Hamstrings'],tip:'Long strides, torso upright \u2014 front knee tracks over the mid-foot.'},
+    {n:'Leg extension (machine)',s:3,r:'12\u201315',nt:'',priority:'normal',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Quads'],secondaryMuscles:[],tip:'Controlled tempo, brief pause at the top.'},
+    {n:'Seated leg curl',s:3,r:'12\u201315',nt:'',priority:'normal',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Hamstrings'],secondaryMuscles:[],tip:'Full range, no bouncing out of the stretch.'},
+    {n:'Machine hip thrust',s:3,r:'10\u201312',nt:'Glute focus without a barbell hinge',priority:'normal',compound:true,inputType:'weight',wlabel:'Stack / plate weight',primaryMuscles:['Glutes'],secondaryMuscles:['Hamstrings'],tip:'Drive through heels, squeeze at the top, don\u2019t overarch the lower back.'},
+    {n:'Calf raises',s:4,r:'12\u201320',nt:'',priority:'normal',compound:false,inputType:'weight',wlabel:'Add kg if weighted',primaryMuscles:['Calves'],secondaryMuscles:[],tip:'Pause at the top, full stretch at the bottom.'},
+    {n:'Hip abduction machine',s:3,r:'12\u201315',nt:'',priority:'normal',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Glute medius/minimus'],secondaryMuscles:[],tip:'Controlled push out and return.'},
+    {n:'Hip adduction machine',s:3,r:'12\u201315',nt:'',priority:'normal',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Adductors'],secondaryMuscles:[],tip:'Same machine as abduction, opposite direction.'},
+    {n:'Cable pull-through',s:3,r:'10\u201312',nt:'Hip hinge pattern without a deadlift bar',priority:'normal',compound:true,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Lower back'],secondaryMuscles:['Glutes','Hamstrings'],tip:'Hips back, not down \u2014 this is a hinge, not a squat.'}
   ]},
   {label:'Cardio + core',focus:'Conditioning + midsection',time:'Gym / outdoors',ex:[
-    {n:'Steady cardio',s:1,r:'20\u201340 min',nt:'Log minutes in the time field',priority:'must',noweight:true,inputType:'choice',primaryMuscles:['Cardio'],secondaryMuscles:[],
+    {n:'Steady cardio',s:1,r:'20\u201340 min',nt:'Log minutes in the time field',priority:'normal',noweight:true,inputType:'choice',primaryMuscles:['Cardio'],secondaryMuscles:[],
      choiceOptions:[
        {name:'Incline treadmill walk',r:'25\u201340 min',inputType:'seconds',wlabel:'Minutes',primaryMuscles:['Cardio'],secondaryMuscles:['Calves','Glutes']},
        {name:'Exercise bike',r:'20\u201335 min',inputType:'seconds',wlabel:'Minutes',primaryMuscles:['Cardio'],secondaryMuscles:['Quads']},
        {name:'Rowing machine',r:'15\u201325 min',inputType:'seconds',wlabel:'Minutes',primaryMuscles:['Cardio'],secondaryMuscles:['Lats','Mid-back']},
        {name:'Outdoor run / jog',r:'20\u201330 min',inputType:'seconds',wlabel:'Minutes',primaryMuscles:['Cardio'],secondaryMuscles:['Calves','Quads']}
      ]},
-    {n:'Intervals (optional finisher)',s:1,r:'10\u201315 min',nt:'Work hard / easy repeats',priority:'optional',noweight:true,inputType:'seconds',wlabel:'Minutes',primaryMuscles:['Cardio'],secondaryMuscles:[],tip:'Example: 1 min hard, 1 min easy \u00d7 8\u201310. Log total minutes.'},
-    {n:'Plank',s:3,r:'30\u201360s',nt:'',priority:'must',noweight:true,inputType:'seconds',wlabel:'Seconds held',primaryMuscles:['Core'],secondaryMuscles:[],tip:'Hips level \u2014 not sagging, not piked. Breathe normally.'},
-    {n:'Dead bug',s:3,r:'10 each',nt:'',priority:'must',noweight:true,inputType:'reps_each',wlabel:'Reps per side',primaryMuscles:['Core'],secondaryMuscles:[],tip:'Lower back stays pressed into the floor.'},
-    {n:'Cable crunch',s:3,r:'12\u201315',nt:'',priority:'optional',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Abs'],secondaryMuscles:[],tip:'Round through the spine \u2014 crunch at the waist, not just arm pull.'},
-    {n:'Hanging knee raises',s:3,r:'8\u201312',nt:'',priority:'optional',noweight:true,inputType:'bodyweight',wlabel:'Bodyweight',primaryMuscles:['Abs'],secondaryMuscles:['Hip flexors'],tip:'Control the swing \u2014 raise knees with the abs, not momentum.'}
+    {n:'Intervals (optional finisher)',s:1,r:'10\u201315 min',nt:'Work hard / easy repeats',priority:'normal',noweight:true,inputType:'seconds',wlabel:'Minutes',primaryMuscles:['Cardio'],secondaryMuscles:[],tip:'Example: 1 min hard, 1 min easy \u00d7 8\u201310. Log total minutes.'},
+    {n:'Plank',s:3,r:'30\u201360s',nt:'',priority:'normal',noweight:true,inputType:'seconds',wlabel:'Seconds held',primaryMuscles:['Core'],secondaryMuscles:[],tip:'Hips level \u2014 not sagging, not piked. Breathe normally.'},
+    {n:'Dead bug',s:3,r:'10 each',nt:'',priority:'normal',noweight:true,inputType:'reps_each',wlabel:'Reps per side',primaryMuscles:['Core'],secondaryMuscles:[],tip:'Lower back stays pressed into the floor.'},
+    {n:'Cable crunch',s:3,r:'12\u201315',nt:'',priority:'normal',compound:false,inputType:'weight',wlabel:'Stack weight',primaryMuscles:['Abs'],secondaryMuscles:[],tip:'Round through the spine \u2014 crunch at the waist, not just arm pull.'},
+    {n:'Hanging knee raises',s:3,r:'8\u201312',nt:'',priority:'normal',noweight:true,inputType:'bodyweight',wlabel:'Bodyweight',primaryMuscles:['Abs'],secondaryMuscles:['Hip flexors'],tip:'Control the swing \u2014 raise knees with the abs, not momentum.'}
   ]}
 ];
 const SUBS={
@@ -1032,6 +1032,29 @@ function checkPR(origName,best,inputType){
 }
 
 /* ===== SAVE SESSION ===== */
+function setHasData(st,inputType){
+  if(!st)return false;
+  if(inputType==='seconds'||inputType==='reps_each')return !!(st.w&&parseFloat(st.w)>0);
+  if(inputType==='bodyweight')return !!(st.r&&parseInt(st.r)>0);
+  return !!(st.w&&st.r&&parseFloat(st.w)>0);
+}
+function markFilledSetsDone(s,gd){
+  if(!s||!gd)return 0;
+  let n=0;
+  s.ex.forEach((ex,ei)=>{
+    const orig=gd.ex[ei]||{};
+    const chosenOpt=orig.inputType==='choice'&&ex.chosenType?orig.choiceOptions?.find(o=>o.name===ex.chosenType):null;
+    const subOverride=(!chosenOpt&&ex.name!==ex.origName)?SUB_TYPE_OVERRIDE[ex.name]:null;
+    const effType=chosenOpt?chosenOpt.inputType:(subOverride?subOverride.inputType:(orig.inputType||'weight'));
+    (ex.sets||[]).forEach(st=>{
+      if(setHasData(st,effType)){st.done=true;n++;}
+      else if(!st.isDrop)st.done=false;
+    });
+  });
+  return n;
+}
+
+
 function bestSetOf(workingSets,inputType){
   const singleField=inputType==='seconds'||inputType==='reps_each';
   const repsFirst=inputType==='bodyweight';
@@ -1045,8 +1068,10 @@ function bestSetOf(workingSets,inputType){
 function saveSession(dl,seqIdx){
   const gd=DAYS[seqIdx]||adHocDay||DAYS.find(d=>d.label===dl);
   const s=WS[dl];if(!s||!gd)return;
+  const filled=markFilledSetsDone(s,gd);
   const newPRs=[];
-  const duration=s.startAt?Math.round((Date.now()-s.startAt)/60000):null;
+  /* End-of-day logging: no live timer required. Assume ~2.5 min per working set (set + 2–3 min rest). */
+  const duration=s.startAt?Math.round((Date.now()-s.startAt)/60000):(filled?Math.max(1,Math.round(filled*2.5)):null);
   const exercises=s.ex.map((ex,ei)=>{
     const orig=gd.ex[ei]||gd.ex[0];
     const isChoiceEx=orig.inputType==='choice';
@@ -1094,7 +1119,7 @@ function editSession(){
   const ex=Data.session.get();if(!ex||ex.skipped)return;
   const isFree=ex.dl==='Free session';
   const seqIdx=isFree?null:(ex.seqIdx!==undefined&&ex.seqIdx!==null?ex.seqIdx:SEQ.indexOf(ex.dl));
-  const gd=isFree?{label:'Free session',focus:'Your combo today',time:'',ex:ex.exercises.map(e=>({n:e.origName,...(findExDef(e.origName)||{}),priority:'must'}))}:(DAYS[seqIdx]||DAYS.find(d=>d.label===ex.dl));
+  const gd=isFree?{label:'Free session',focus:'Your combo today',time:'',ex:ex.exercises.map(e=>({n:e.origName,...(findExDef(e.origName)||{}),priority:'normal'}))}:(DAYS[seqIdx]||DAYS.find(d=>d.label===ex.dl));
   if(!gd)return;
   WS[ex.dl]={
     ex:ex.exercises.map((e,ei)=>({
@@ -1361,8 +1386,6 @@ function renderToday(){
     const seqIdx=gd.label==='Free session'?'free':(adHocSeqIdx!==null?adHocSeqIdx:(nextIdx!==null?nextIdx:0));
     initWS(gd.label,gd);
     const ws=WS[gd.label];
-    const elapsed=ws.startAt?getElapsed(ws.startAt):'0m 00s';
-    const restElapsed=ws.lastSetAt?getElapsed(ws.lastSetAt):null;
     const hasDraft=!!lsG('ws_draft:'+todayKey());
     if(sym.energy&&sym.energy<=2){
       html+=`<div class="card na" style="margin-bottom:10px;border-left:3px solid var(--amb)">
@@ -1371,13 +1394,10 @@ function renderToday(){
       </div>`;
     }
 
-    if(restElapsed){
-      html+=`<div class="rest-timer">
-        <div style="flex:1"><div class="cl">Rest since last set</div><div id="rest-num" class="rest-num">${restElapsed}</div>
-        <div style="font-size:11px;color:var(--cyan);font-weight:600;margin-top:2px">Compounds: 2\u20133 min &middot; Isolation: 60\u201390s</div></div>
-        <div style="font-size:28px">&#x23F1;</div>
-      </div>`;
-    }
+    html+=`<div class="card" style="margin-bottom:10px;border-color:var(--cbr)">
+      <div class="cl">End-of-day log</div>
+      <div style="font-size:13px;color:var(--txt);line-height:1.5;margin-top:4px">Fill in what you did whenever you\u2019re ready \u2014 no need to tap after every set. Rest between sets is assumed <b>2\u20133 minutes</b>.</div>
+    </div>`;
 
     html+=`<div class="card gym">
       <div class="sess-hd">
@@ -1385,7 +1405,7 @@ function renderToday(){
           <div class="ct">${gd.label}</div><div class="cs">${gd.focus}</div>
           <button style="font-size:12px;color:var(--mut);background:none;border:none;cursor:pointer;padding:4px 0;font-family:inherit" onclick="startSession(-1)">&#x21C4; Change session</button>
         </div>
-        <div style="text-align:right"><div id="sess-timer-num" class="sess-timer">${elapsed}</div><div style="font-size:10px;color:var(--mut)">session time</div></div>
+        <div style="text-align:right;font-size:11px;color:var(--mut);font-weight:600;max-width:110px">Rest 2\u20133 min between sets</div>
       </div>`;
 
     // Render exercises grouped by must/optional
@@ -1405,7 +1425,7 @@ function renderToday(){
       const effOrigLike=chosenOpt?{...orig,...chosenOpt,noweight:true}:(subOverride?{...orig,...subOverride}:orig);
       const bestForSugg=lx?.best||histFall?.best||null;
       const sugg=bestForSugg?getSuggestion(effOrigLike,bestForSugg,trackName):'';
-      const allDone=ex.sets.filter(s=>!s.isDrop).every(s=>s.done);
+      const allDone=ex.sets.filter(s=>!s.isDrop).length>0&&ex.sets.filter(s=>!s.isDrop).every(s=>setHasData(s,effType));
       const isSubbed=ex.name!==ex.origName;
       const subOpen=ws.subOpen===ei;
       const subs=SUBS[ex.origName]||[];
@@ -1424,7 +1444,6 @@ function renderToday(){
         <div class="exhd">
           <div style="flex:1">
             <div class="exn${allDone?' done':''}">${ex.name}${allDone?' &#x2713;':''}
-              <span class="pill ${orig.priority==='must'?'pr':'pd'}">${orig.priority==='must'?'MUST':'OPTIONAL'}</span>
               <button class="infobtn" onclick="togInfo('${gd.label}',${ei})" title="Form tips">&#x24D8;</button>
             </div>
             ${isSubbed?`<div class="subbed">SUB for ${ex.origName}</div>`:''}
@@ -1442,15 +1461,15 @@ function renderToday(){
       if(!isChoice||ex.chosenType){
         ex.sets.forEach((set,si)=>{
           const isDrop=set.isDrop;
+          const filled=setHasData(set,effType);
           const isExtra=isDrop||si>=(orig.s||3);
-          h+=`<div class="srow${set.done?' setdone':''}${isDrop?' droprow':''}"${si===ex.sets.length-1&&!subOpen?' style="border-bottom:none"':''}>
+          h+=`<div class="srow${filled?' setdone':''}${isDrop?' droprow':''}"${si===ex.sets.length-1&&!subOpen?' style="border-bottom:none"':''}>
             <div class="snum">${isDrop?`S${si+1}<span class="dbadge">DROP</span>`:`S${si+1}`}${isExtra?`<button class="setdel" onclick="removeSet('${gd.label}',${ei},${si})" title="Remove this set">&#x2715;</button>`:''}</div>
             <div style="text-align:center;flex:1">
               <input class="nin" type="number" inputmode="decimal" placeholder="${effType==='seconds'?((subWlabel||orig.wlabel||'').toLowerCase().includes('min')?'min':'sec'):effType==='reps_each'?'reps':'kg'}" min="0" step="${effType==='weight'?0.5:1}" value="${set.w}" oninput="updSet('${gd.label}',${ei},${si},'w',this.value)">
               <div class="nin-lbl">${effType==='seconds'?((subWlabel||orig.wlabel||'').toLowerCase().includes('min')?'min':'sec'):effType==='reps_each'?'/side':'kg'}</div>
             </div>
             ${(effType!=='seconds'&&effType!=='reps_each')?`<span class="tx">&times;</span><div style="text-align:center;flex:1"><input class="nin" type="number" inputmode="numeric" placeholder="reps" min="0" step="1" value="${set.r}" oninput="updSet('${gd.label}',${ei},${si},'r',this.value)"><div class="nin-lbl">reps</div></div>`:''}
-            <button class="dbtn${set.done?' dk':''}" onclick="togDone('${gd.label}',${ei},${si})">${set.done?'&#x2713;':'&#x25CB;'}</button>
           </div>`;
         });
       }
@@ -1506,31 +1525,26 @@ function renderToday(){
         html+=renderEx(ws.ex[ei],ei);
       });
     }else{
-      html+=`<div class="sect-div"><div class="sect-lbl must">Must do</div><div class="sect-line"></div></div>`;
-      gd.ex.forEach((e,ei)=>{if(e.priority==='must')html+=renderEx(ws.ex[ei],ei);});
-    const optExist=gd.ex.some(e=>e.priority!=='must');
-    if(optExist){
-      html+=`<div class="sect-div"><div class="sect-lbl opt">If got time</div><div class="sect-line"></div></div>`;
-      gd.ex.forEach((e,ei)=>{if(e.priority!=='must')html+=`<div style="opacity:.85">${renderEx(ws.ex[ei],ei)}</div>`;});
-    }
+      gd.ex.forEach((e,ei)=>{html+=renderEx(ws.ex[ei],ei);});
     }
 
-    const mustList=ws.ex.filter((e,i)=>gd.ex[i].priority==='must');
-    const optList=ws.ex.filter((e,i)=>gd.ex[i].priority!=='must');
-    const isDone=e=>e.sets.filter(s=>!s.isDrop).every(s=>s.done)&&e.sets.filter(s=>!s.isDrop).length>0;
-    const mustDone=mustList.filter(isDone).length;
-    const optDone=optList.filter(isDone).length;
+    const loggedCount=ws.ex.filter((e,i)=>{
+      const orig=gd.ex[i]||{};
+      const chosenOpt=orig.inputType==='choice'&&e.chosenType?orig.choiceOptions?.find(o=>o.name===e.chosenType):null;
+      const subOverride=(!chosenOpt&&e.name!==e.origName)?SUB_TYPE_OVERRIDE[e.name]:null;
+      const effType=chosenOpt?chosenOpt.inputType:(subOverride?subOverride.inputType:(orig.inputType||'weight'));
+      return (e.sets||[]).some(s=>!s.isDrop&&setHasData(s,effType));
+    }).length;
     html+=`<div class="sep"></div>
       <div style="font-size:11px;color:var(--mut);margin-bottom:6px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Session notes</div>
       <textarea class="genin" rows="2" placeholder="e.g. felt strong, good energy..." oninput="if(WS['${gd.label}']){WS['${gd.label}'].note=this.value;saveDraft('${gd.label}')}">${escHtml(ws.note)}</textarea>
       <div style="font-size:11px;color:var(--mut);margin:10px 0 6px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Pain / joint (optional)</div>
       <textarea class="genin" rows="1" placeholder="e.g. shoulder twinge, left knee..." oninput="if(WS['${gd.label}']){WS['${gd.label}'].painNote=this.value;saveDraft('${gd.label}')}">${escHtml(ws.painNote)}</textarea>
       <div style="display:flex;justify-content:space-between;margin:12px 0 5px">
-        <div style="font-size:13px;color:var(--red);font-weight:700">Must: ${mustDone}/${mustList.length} done</div>
-        <div style="font-size:13px;color:var(--dim);font-weight:700">Optional: ${optDone}/${optList.length} done</div>
+        <div style="font-size:13px;color:var(--cyan);font-weight:700">${loggedCount}/${ws.ex.length} exercises filled</div>
+        <div style="font-size:12px;color:var(--mut);font-weight:600">Rest assumed 2\u20133 min</div>
       </div>
-      <div class="prog-bar" style="margin-bottom:6px"><div class="prog-fill" style="width:${mustList.length?Math.round(mustDone/mustList.length*100):100}%;background:var(--red)"></div></div>
-      <div class="prog-bar"><div class="prog-fill" style="width:${optList.length?Math.round(optDone/optList.length*100):100}%;background:var(--dim)"></div></div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${ws.ex.length?Math.round(loggedCount/ws.ex.length*100):0}%;background:var(--cyan)"></div></div>
     </div>
     <button class="btn btn-ghost" onclick="document.getElementById('skipsheet').style.display='block'" style="margin-top:6px">Skip today</button>
     <div class="skipsheet" id="skipsheet">
@@ -1541,7 +1555,7 @@ function renderToday(){
       <button class="skipopt" style="color:var(--mut);font-weight:500" onclick="document.getElementById('skipsheet').style.display='none'">Cancel</button>
     </div>`;
     showStickyBtn(true,gd.label,seqIdx);
-    startTimerTick();
+    stopTimerTick();
   }
 
   /* -- Weather placeholder (filled async after DOM write) -- */
@@ -1617,7 +1631,7 @@ function addToFreeSession(name){
   if(!adHocDay||adHocDay.label!=='Free session')return;
   const def=getFreeSessionExerciseList().find(e=>e.n===name);
   if(!def)return;
-  adHocDay.ex.push({...def,priority:'must'});
+  adHocDay.ex.push({...def,priority:'normal'});
   const pSubs=lsG('persisted_subs')||{};
   const trackN=pSubs[def.n]||def.n;
   const prefill=getPrefillSets(def,trackN,def.s||3);
@@ -2921,7 +2935,7 @@ if(!Data.session.get()){
   if(d&&d.dl&&d.state){
     WS[d.dl]=d.state;
     if(d.dl==='Free session'){
-      adHocDay={label:'Free session',focus:'Your combo today',time:'',ex:d.state.ex.map(e=>({n:e.origName,...(findExDef(e.origName)||{}),priority:'must'}))};
+      adHocDay={label:'Free session',focus:'Your combo today',time:'',ex:d.state.ex.map(e=>({n:e.origName,...(findExDef(e.origName)||{}),priority:'normal'}))};
       adHocSeqIdx=null;
     }else{
       const _idx=SEQ.indexOf(d.dl);

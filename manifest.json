@@ -1,6 +1,6 @@
 {
-  "name": "Gym",
-  "short_name": "Gym",
+  "name": "Gym Progress Tracker",
+  "short_name": "GPT",
   "description": "Personal gym tracker — workouts, food, recipes, progress",
   "start_url": ".",
   "display": "standalone",
