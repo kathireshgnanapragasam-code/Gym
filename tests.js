@@ -26,6 +26,8 @@ T('lift progress charts on Progress tab', src.includes('function renderLiftProgr
 T('body stats chart under Progress body stats', src.includes('function renderBodyStatsChart') && src.includes('onBodyChartMetricChange') && src.includes('Body composition trend'));
 T('anytime body-stat date logging', src.includes('id="st_date"') && src.includes('function saveStats') && src.includes('Cannot log body stats in the future'));
 T('Google sign-in helpers present', src.includes('function handleGoogleCredential') && src.includes('function initGoogleSignIn') && src.includes('accounts.google.com/gsi/client'));
+T('free session can remove added exercise', src.includes('function removeFromFreeSession') && src.includes('Remove exercise') && src.includes('ex-del'));
+T('history session can be deleted', src.includes('function deleteSession') && src.includes('Delete session') && src.includes('function editSession'));
 T('photo recipe save pipeline exists', src.includes('function saveRecipeFromPhoto') && src.includes('function onRecipePhotoSelected') && src.includes('compressImageFile'));
 
 /* Program */

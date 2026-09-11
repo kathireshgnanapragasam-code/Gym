@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#E0A339">
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="icon.jpg" type="image/jpeg">
-<link rel="apple-touch-icon" href="icon.jpg">
+<link rel="icon" href="icon.png" type="image/png">
+<link rel="apple-touch-icon" href="icon.png">
 <meta name="apple-mobile-web-app-title" content="Gym">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -107,7 +107,9 @@ body{background:var(--bg);color:var(--txt);font-family:"IBM Plex Sans",-apple-sy
 .choice-btn.chosen{border-color:var(--cyan);background:var(--cbg);color:var(--cyan)}
 /* SET CONTROLS */
 .set-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.ex-del{flex-shrink:0;width:36px;height:36px;border-radius:10px;border:1px solid var(--rbr);background:var(--rbg);color:var(--red);font-size:16px;font-weight:800;cursor:pointer;font-family:inherit;line-height:1}
 .subbtn{font-size:12px;color:var(--mut);background:var(--c2);border:1px solid var(--c3);border-radius:8px;padding:8px 12px;cursor:pointer;font-family:"IBM Plex Sans",sans-serif;font-weight:600;min-height:36px}
+.subbtn.danger{color:var(--red);border-color:var(--rbr);background:var(--rbg)}
 .addbtn{font-size:12px;color:var(--grn);background:var(--gbg);border:1px solid var(--gbr);border-radius:8px;padding:8px 12px;cursor:pointer;font-family:"IBM Plex Sans",sans-serif;font-weight:700}
 .dropbtn{font-size:12px;color:var(--amb);background:var(--abg);border:1px solid var(--abr);border-radius:8px;padding:8px 12px;cursor:pointer;font-family:"IBM Plex Sans",sans-serif;font-weight:700}
 .subpanel{background:var(--c2);border-radius:12px;padding:12px;margin-top:8px;border:1px solid var(--cbr)}
@@ -1309,6 +1311,24 @@ function editSession(){
   saveDraft(ex.dl);
   renderToday();
 }
+function deleteSession(){
+  const dk=activeDateKey();
+  const ex=Data.session.get(dk);
+  if(!ex){alert('No session saved for this date.');return;}
+  const label=ex.dl||'session';
+  if(!confirm('Delete "'+label+'" for '+dk+'?\n\nThis removes the saved session'+(ex.cardio||getRun(dk)?' and any run log for that day':'')+'. This cannot be undone.'))return;
+  const isFree=ex.dl==='Free session';
+  const seqIdx=isFree?null:(ex.seqIdx!==undefined&&ex.seqIdx!==null?ex.seqIdx:SEQ.indexOf(ex.dl));
+  Data.session.delete(dk);
+  const mk=monthKeyFor(dk);
+  const mlog=lsG('mlog:'+mk)||{};delete mlog[dk];lsS('mlog:'+mk,mlog);
+  lsDel('run:'+dk);
+  if(!isFree&&!ex.skipped&&isLoggingToday()&&seqIdx!==null&&seqIdx>=0)lsS('last_seq_idx',(seqIdx+3)%4);
+  clearDraft();
+  adHocDay=null;adHocSeqIdx=null;
+  showStickyBtn(false);stopTimerTick();
+  renderToday();
+}
 function showSkipSheet(){
   // Works from picker (no gd yet) and active workout (gd set)
   // Build an inline sheet appended to p0 if skipsheet doesn't exist yet
@@ -1995,7 +2015,10 @@ function renderToday(){
         <div style="font-size:12px;color:var(--cyan);margin-top:3px;font-weight:600">${e.suggestion||''}</div>
       </div>`).join('')}`:`${existing.exercises?.[0]?.suggestion?`<div style="font-size:13px;color:var(--cyan);font-weight:600;margin-bottom:8px">${existing.exercises[0].suggestion}</div>`:''}`}
       ${existing.note?`<div style="margin-top:10px;font-size:13px;color:var(--mut);font-style:italic">"${existing.note}"</div>`:''}
-      <button class="btn btn-ghost btn-sm" style="margin-top:12px" onclick="editSession()">&#x270F; Edit session</button>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-ghost btn-sm" style="flex:1;margin-top:0" onclick="editSession()">&#x270F; Edit session</button>
+        <button class="btn btn-ghost btn-sm" style="flex:1;margin-top:0;color:var(--red);border-color:var(--rbr)" onclick="deleteSession()">&#x2715; Delete session</button>
+      </div>
     </div>`;
     showStickyBtn(false);
   }
@@ -2112,6 +2135,7 @@ function renderToday(){
             ${orig.nt?`<div style="font-size:11px;color:var(--amb);font-style:italic;margin-top:3px">${orig.nt}</div>`:''}
             ${freshNote?`<div style="font-size:11px;color:var(--cyan);margin-top:4px;padding:6px 8px;background:var(--c2);border-radius:8px">&#x21BB; ${freshNote}</div>`:''}
           </div>
+          ${gd.label==='Free session'?`<button class="ex-del" onclick="removeFromFreeSession(${ei})" title="Remove exercise" aria-label="Remove ${escHtml(ex.name)}">&#x2715;</button>`:''}
         </div>
         ${ws.infoOpen===ei?renderExInfoPanel(ex,orig,ei):''}`;
       // Choice picker
@@ -2138,7 +2162,7 @@ function renderToday(){
         ${isSubbed?`<button class="subbtn" onclick="resetSub('${gd.label}',${ei})">&#x21A9; Original</button>`:''}
         <button class="addbtn" onclick="addSet('${gd.label}',${ei})">+ Set</button>
         <button class="dropbtn" onclick="addDropSet('${gd.label}',${ei})">&#x2193; Drop</button>
-        ${gd.label==='Free session'?`<button class="subbtn" style="color:var(--red)" onclick="removeFromFreeSession(${ei})">&#x2715; Remove</button>`:''}
+        ${gd.label==='Free session'?`<button class="subbtn danger" onclick="removeFromFreeSession(${ei})">&#x2715; Remove exercise</button>`:''}
       </div>`;
       if(subOpen){
         h+=`<div class="subpanel">
@@ -2314,8 +2338,16 @@ function filterFreeExList(q){
 }
 function removeFromFreeSession(ei){
   if(!adHocDay||adHocDay.label!=='Free session')return;
+  const name=WS['Free session']?.ex?.[ei]?.name||adHocDay.ex[ei]?.n||'this exercise';
+  if(!confirm('Remove "'+name+'" from today\'s session?'))return;
   adHocDay.ex.splice(ei,1);
-  WS['Free session'].ex.splice(ei,1);
+  if(WS['Free session']){
+    WS['Free session'].ex.splice(ei,1);
+    if(WS['Free session'].subOpen===ei)WS['Free session'].subOpen=null;
+    if(WS['Free session'].infoOpen===ei)WS['Free session'].infoOpen=null;
+    if(typeof WS['Free session'].subOpen==='number'&&WS['Free session'].subOpen>ei)WS['Free session'].subOpen--;
+    if(typeof WS['Free session'].infoOpen==='number'&&WS['Free session'].infoOpen>ei)WS['Free session'].infoOpen--;
+  }
   saveDraft('Free session');
   renderToday();
 }
@@ -3533,7 +3565,7 @@ function renderHistory(){
   if(recents.length){
     html+=`<div class="card"><div class="cl">Recent sessions</div><div class="ct" style="margin-bottom:10px">Last 14 days</div>
       ${recents.map(s=>`<div class="hitem"><div style="display:flex;justify-content:space-between;align-items:center">
-        <div><div style="font-size:15px;font-weight:700;font-family:'Barlow',sans-serif;cursor:pointer;text-decoration:underline;text-decoration-color:var(--c3)" onclick="setLogDate('${s.date}');document.querySelectorAll('.tab')[0].click()">${s.date}${s.duration?' <span style="font-size:12px;color:var(--dim);font-family:\'IBM Plex Sans\',sans-serif;text-decoration:none">'+s.duration+'m</span>':''}</div>
+        <div><div style="font-size:15px;font-weight:700;font-family:'Barlow',sans-serif;cursor:pointer;text-decoration:underline;text-decoration-color:var(--c3)" onclick="setLogDate('${s.date}');document.querySelector('.tab[data-t=\"0\"]').click()">${s.date}${s.duration?' <span style="font-size:12px;color:var(--dim);font-family:\'IBM Plex Sans\',sans-serif;text-decoration:none">'+s.duration+'m</span>':''}</div>
         <div style="font-size:13px;color:var(--mut)">${s.dl}${s.newPRs&&s.newPRs.length?' &#x2605;':''}</div></div>
         <div class="pill ${s.skipped?(s.skipReason==='sick'?'pr':'pa'):'pg'}">${s.skipped?(s.skipReason==='sick'?'Sick':s.skipReason==='tired'?'Tired':'Busy'):'Done &#x2713;'}</div>
       </div>${s.note?`<div style="font-size:12px;color:var(--dim);margin-top:4px;font-style:italic">"${escHtml(s.note)}"</div>`:''}</div>`).join('')}
