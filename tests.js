@@ -21,8 +21,11 @@ T('run log with optional Strava link', src.includes('function saveRunLog') && sr
 T('run captures distance pace elev calories', src.includes('run-elev-gain') && src.includes('run-elev-loss') && src.includes('estimateRunCalories') && src.includes('getBodyForCalcs') && src.includes('ACSM'));
 T('strava link autofill via API connect', src.includes('function fetchAndFillFromStravaLink') && src.includes('function startStravaConnect') && src.includes('function ensureStravaAccessToken'));
 T('cardio day is Strava-focused', src.includes('function renderCardioDaySection') && src.includes('function saveCardioDay') && src.includes('Log cardio day'));
-T('no separate Cardio app tab', !/>Cardio<\/button>/.test(src) && src.includes('data-t="4">Recipes</button>'));
+T('no separate Cardio app tab', !/>Cardio<\/button>/.test(src) && src.includes('data-t="5">Recipes</button>') && src.includes('data-t="2">Profile</button>'));
 T('lift progress charts on Progress tab', src.includes('function renderLiftProgressCharts') && src.includes('function sessionAvgLoad') && src.includes('onLiftChartExChange') && src.includes('By week'));
+T('body stats chart under Progress body stats', src.includes('function renderBodyStatsChart') && src.includes('onBodyChartMetricChange') && src.includes('Body composition trend'));
+T('anytime body-stat date logging', src.includes('id="st_date"') && src.includes('function saveStats') && src.includes('Cannot log body stats in the future'));
+T('Google sign-in helpers present', src.includes('function handleGoogleCredential') && src.includes('function initGoogleSignIn') && src.includes('accounts.google.com/gsi/client'));
 T('photo recipe save pipeline exists', src.includes('function saveRecipeFromPhoto') && src.includes('function onRecipePhotoSelected') && src.includes('compressImageFile'));
 
 /* Program */
@@ -32,8 +35,8 @@ T('no squat or deadlift programmed as primary lifts', !/n:'(Back )?Squat'|n:'Dea
 T('legs day emphasized', src.includes("label:'Legs day'") && src.includes("n:'Leg press'") && src.includes("n:'Machine hip thrust'") && src.includes("n:'Walking lunges'"));
 T('cardio day present', src.includes("label:'Cardio + core'") && src.includes("n:'Steady cardio'") && src.includes("Incline treadmill walk"));
 
-/* Profile targets for recomp */
-T('default targets suited to ~71kg recomp', src.includes('protein:140,kcal:2200,carbs:220,fat:65') && src.includes('weight:71'));
+/* Profile targets for recomp — weight/BF come from body logs, not fixed profile identity */
+T('default targets suited to recomp', src.includes('protein:140,kcal:2200,carbs:220,fat:65') && src.includes('function getBodyForCalcs') && !/weight:71/.test(src));
 
 /* Foods starter + HelloFresh path */
 T('starter foods include staples + whey + HelloFresh placeholder', [
@@ -78,16 +81,21 @@ const scriptBlocks = [...src.matchAll(/<script>([\s\S]*?)<\/script>/g)];
 const script = scriptBlocks[scriptBlocks.length - 1][1];
 try {
   const run = new Function('localStorage', 'document', 'window', 'navigator', 'fetch', 'File', 'URL', 'Blob', 'alert', 'confirm', 'Image',
-    script + '\n;return {bestSetOf, checkPR, todayKey, getProfile, Coach, FOODS, DAYS, SEQ, findExDef, fibreWarnHTML, isSymptomDay, APP_VERSION};');
+    script + '\n;return {bestSetOf, checkPR, todayKey, getProfile, getBodyForCalcs, Coach, FOODS, DAYS, SEQ, findExDef, fibreWarnHTML, isSymptomDay, APP_VERSION};');
   const ImageStub = function(){ this.onload=null; this.onerror=null; Object.defineProperty(this,'src',{set(){}}); };
   const app = run(localStorage, document, window, navigator, () => Promise.reject(new Error('offline')), function(){}, { createObjectURL: () => '', revokeObjectURL: () => {} }, function(){}, () => {}, () => true, ImageStub);
 
   T('APP_VERSION is v1.0', app.APP_VERSION === 'v1.0');
   T('SEQ length 4', app.SEQ.length === 4 && app.SEQ[3] === 'Cardio + core');
   T('DAYS match SEQ labels', app.DAYS.map(d => d.label).join('|') === app.SEQ.join('|'));
-  T('profile defaults', (() => {
+  T('profile defaults without fixed weight', (() => {
     const p = app.getProfile();
-    return p.targets.protein === 140 && p.targets.kcal === 2200 && p.weight === 71;
+    return p.targets.protein === 140 && p.targets.kcal === 2200 && p.weight == null;
+  })());
+  T('body calcs use latest bstats log', (() => {
+    localStorage.setItem('bstats', JSON.stringify([{ date: '2026-01-01', wt: 70, bf: 19 }, { date: '2026-01-10', wt: 71.2, bf: 18.5 }]));
+    const b = app.getBodyForCalcs();
+    return b.available && b.weightKg === 71.2 && b.bodyFatPct === 18.5;
   })());
   T('FOODS all have macros', app.FOODS.every(f => f.per100 && ['k','p','c','f'].every(x => typeof f.per100[x] === 'number')));
   T('no bench / squat / deadlift defs', !app.findExDef('Bench press') && !app.findExDef('Squat') && !app.findExDef('Deadlift'));

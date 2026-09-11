@@ -10,6 +10,7 @@
 <link rel="icon" href="icon.jpg" type="image/jpeg">
 <link rel="apple-touch-icon" href="icon.jpg">
 <meta name="apple-mobile-web-app-title" content="Gym">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <title>Gym v1.0</title>
@@ -213,6 +214,10 @@ textarea.genin{resize:none}
 .lift-chart-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
 .lift-chart-row .foodsel{flex:1;min-width:140px;margin-bottom:0}
 .lift-chart-meta{font-size:12px;color:var(--mut);margin-top:8px;line-height:1.4}
+.profile-hero{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+.profile-avatar{width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid var(--cbr);background:var(--c2)}
+.profile-avatar.ph{display:flex;align-items:center;justify-content:center;font-weight:800;font-family:"Barlow",sans-serif;color:var(--cyan);font-size:20px}
+#google-signin-btn{min-height:44px;display:flex;justify-content:center;overflow:hidden}
 </style>
 </head>
 <body>
@@ -232,15 +237,17 @@ textarea.genin{resize:none}
 <div class="tabs">
   <button class="tab on" data-t="0">Today</button>
   <button class="tab" data-t="1">Progress</button>
-  <button class="tab" data-t="2">Food</button>
-  <button class="tab" data-t="3">History</button>
-  <button class="tab" data-t="4">Recipes</button>
+  <button class="tab" data-t="2">Profile</button>
+  <button class="tab" data-t="3">Food</button>
+  <button class="tab" data-t="4">History</button>
+  <button class="tab" data-t="5">Recipes</button>
 </div>
 <div class="pnl on" id="p0"></div>
 <div class="pnl" id="p1"></div>
 <div class="pnl" id="p2"></div>
 <div class="pnl" id="p3"></div>
 <div class="pnl" id="p4"></div>
+<div class="pnl" id="p5"></div>
 <div class="sticky-wrap" id="sticky-wrap">
   <button class="sticky-save" id="sticky-btn">Log today’s workout</button>
 </div>
@@ -445,19 +452,121 @@ function showStorageFailWarning(){
   document.body.insertAdjacentHTML('afterbegin','<div id="storage-fail-banner" style="position:relative;z-index:998;background:var(--rbg);color:var(--red);font-size:13px;font-weight:700;padding:9px 14px;text-align:center">&#x26A0; Your device is out of storage space \u2014 this change may NOT have saved. Free up space or export/share your data now.</div>');
 }
 function getProfile(){
-  return lsG('user_profile')||{targets:{protein:140,kcal:2200,carbs:220,fat:65},weight:71,heightCm:175,bodyFat:20,goalWeight:70,goalBF:14,trainingDaysPerWeek:4};
+  const p=lsG('user_profile')||{targets:{protein:140,kcal:2200,carbs:220,fat:65},heightCm:null,goalWeight:null,goalBF:null,trainingDaysPerWeek:4};
+  if(!p.targets)p.targets={protein:140,kcal:2200,carbs:220,fat:65};
+  return p;
+}
+function getAuth(){return lsG('auth_user');}
+function setAuth(u){lsS('auth_user',u);}
+function clearAuth(){lsDel('auth_user');}
+function isSignedIn(){return!!(getAuth()&&getAuth().email);}
+function getGoogleClientId(){return(lsG('google_client_id')||'').trim();}
+function decodeJwtPayload(token){
+  try{
+    const base=String(token).split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+    const json=decodeURIComponent(atob(base).split('').map(c=>'%'+(('00'+c.charCodeAt(0).toString(16)).slice(-2))).join(''));
+    return JSON.parse(json);
+  }catch(e){return null;}
+}
+function handleGoogleCredential(response){
+  const p=decodeJwtPayload(response?.credential);
+  if(!p?.email){alert('Google sign-in failed — try again.');return;}
+  setAuth({
+    sub:p.sub,
+    email:p.email,
+    name:p.name||p.email.split('@')[0],
+    picture:p.picture||null,
+    signedInAt:new Date().toISOString()
+  });
+  const conf=document.getElementById('auth-conf');
+  if(conf){conf.style.display='block';setTimeout(()=>conf.style.display='none',2000);}
+  renderProfile();
+  updateHeader();
+}
+function saveGoogleClientId(){
+  const v=(document.getElementById('google-client-id')?.value||'').trim();
+  if(!v){alert('Paste your Google OAuth Client ID first.');return;}
+  lsS('google_client_id',v);
+  const c=document.getElementById('gci-conf');if(c){c.style.display='block';setTimeout(()=>c.style.display='none',1500);}
+  renderProfile();
+  setTimeout(initGoogleSignIn,50);
+}
+function signOutGoogle(){
+  if(!confirm('Sign out on this device? Workout and body logs stay saved locally.'))return;
+  clearAuth();
+  try{if(window.google?.accounts?.id)google.accounts.id.disableAutoSelect();}catch(e){}
+  renderProfile();
+  updateHeader();
+}
+function initGoogleSignIn(){
+  const clientId=getGoogleClientId();
+  const btn=document.getElementById('google-signin-btn');
+  if(!btn)return;
+  if(!clientId){
+    btn.innerHTML='<div class="cs" style="margin:0">Add a Google Client ID below to enable Gmail sign-in.</div>';
+    return;
+  }
+  if(!window.google?.accounts?.id){
+    btn.innerHTML='<div class="cs" style="margin:0">Loading Google\u2026</div>';
+    setTimeout(initGoogleSignIn,400);
+    return;
+  }
+  try{
+    google.accounts.id.initialize({
+      client_id:clientId,
+      callback:handleGoogleCredential,
+      auto_select:false,
+      cancel_on_tap_outside:true
+    });
+    btn.innerHTML='';
+    google.accounts.id.renderButton(btn,{
+      type:'standard',
+      theme:'filled_black',
+      size:'large',
+      text:'continue_with',
+      shape:'rectangular',
+      width:Math.min(320,btn.clientWidth||280)
+    });
+  }catch(e){
+    btn.innerHTML='<div class="cs" style="color:var(--red);margin:0">Google button failed: '+(e.message||e)+'</div>';
+  }
 }
 function getBodyForCalcs(){
   const prof=getProfile();
   const stats=lsG('bstats')||[];
-  const latest=[...stats].reverse().find(s=>s.wt||s.bf);
-  const weightKg=parseFloat(latest?.wt)||parseFloat(prof.weight)||71;
-  const bodyFatPct=parseFloat(latest?.bf)||parseFloat(prof.bodyFat)||20;
-  const heightCm=parseFloat(prof.heightCm)||175;
-  const leanMassKg=Math.round(weightKg*(1-bodyFatPct/100)*10)/10;
-  return{weightKg,bodyFatPct,heightCm,leanMassKg,source:latest?.wt?'latest body log':'profile defaults'};
+  const latest=[...stats].filter(s=>s.wt||s.bf).sort((a,b)=>String(a.date).localeCompare(String(b.date))).reverse()[0];
+  const weightKg=parseFloat(latest?.wt)||null;
+  const bodyFatPct=parseFloat(latest?.bf)||null;
+  const heightCm=parseFloat(prof.heightCm)||null;
+  const leanMassKg=(weightKg&&bodyFatPct!=null)?Math.round(weightKg*(1-bodyFatPct/100)*10)/10:null;
+  return{
+    weightKg,
+    bodyFatPct,
+    heightCm,
+    leanMassKg,
+    available:!!(weightKg>0),
+    source:latest?(latest.date+' body log'):'no body log yet'
+  };
 }
 function saveProfile(p){lsS('user_profile',p);}
+function saveBioProfile(){
+  const prof=getProfile();
+  const h=parseFloat(document.getElementById('bio-height')?.value);
+  const gw=parseFloat(document.getElementById('bio-goal-wt')?.value);
+  const gbf=parseFloat(document.getElementById('bio-goal-bf')?.value);
+  const days=parseInt(document.getElementById('bio-days')?.value);
+  if(h>0)prof.heightCm=h; else if(document.getElementById('bio-height')?.value==='')prof.heightCm=null;
+  if(gw>0)prof.goalWeight=gw; else if(document.getElementById('bio-goal-wt')?.value==='')prof.goalWeight=null;
+  if(gbf>=0&&!Number.isNaN(gbf)&&document.getElementById('bio-goal-bf')?.value!=='')prof.goalBF=gbf;
+  else if(document.getElementById('bio-goal-bf')?.value==='')prof.goalBF=null;
+  if(days>0)prof.trainingDaysPerWeek=days;
+  delete prof.weight;
+  delete prof.bodyFat;
+  saveProfile(prof);
+  const c=document.getElementById('bio-conf');if(c){c.style.display='block';setTimeout(()=>c.style.display='none',1500);}
+  updateHeader();
+  updateHeaderSub();
+}
 function saveTargets(){
   const prof=getProfile();
   const gv=id=>parseFloat(document.getElementById(id)?.value);
@@ -465,7 +574,7 @@ function saveTargets(){
   if(!protein||!kcal||!carbs||!fat){alert('All four targets must be positive numbers.');return;}
   prof.targets={protein,kcal,carbs,fat};
   saveProfile(prof);
-  updateHeader();renderFood();renderProgress();
+  updateHeader();renderFood();renderProgress();renderProfile();
   alert('Targets saved.');
 }
 function saveBarWeight(){
@@ -627,6 +736,7 @@ let _liftChartState={
   pull:{ex:null,range:'week'},
   legs:{ex:null,range:'week'}
 };
+let _bodyChartState={metric:'wt',range:'week'};
 const LIFT_CHART_DAYS={push:'Push day',pull:'Pull day',legs:'Legs day'};
 function setProgressDiagMode(mode){
   _progressDiagMode=mode;
@@ -790,6 +900,7 @@ function updateHeader(){
   if(ekMv)ekMv.className='mv'+(k>t.kcal*1.1?' warn':'');
   if(ekl)ekl.textContent='/ '+t.kcal+' kcal';
   if(ew)ew.textContent=wt;
+  updateHeaderSub();
 }
 
 /* ===== SEQUENCE ===== */
@@ -1513,7 +1624,7 @@ function deleteRun(){
    Body fat is not in ACSM directly — we use total body weight (standard). Lean mass is shown for context. */
 function estimateRunCalories({km,mins,elevGainM,weightKg}){
   km=parseFloat(km)||0;mins=parseFloat(mins)||0;elevGainM=parseFloat(elevGainM)||0;weightKg=parseFloat(weightKg)||0;
-  if(km<=0||mins<=0||weightKg<=0)return{available:false,reason:'Need distance, moving time, and body weight'};
+  if(km<=0||mins<=0||weightKg<=0)return{available:false,reason:!weightKg?'Log your body weight in Progress or Profile first':'Need distance, moving time, and body weight'};
   const distM=km*1000;
   const speedMPerMin=distM/mins; /* m/min */
   const grade=Math.max(0,elevGainM)/distM; /* fractional; downhill not modelled by ACSM */
@@ -1568,12 +1679,12 @@ function updateRunCalPreview(){
   }
   const el=document.getElementById('run-cal-preview');if(!el)return;
   if(!est.available){
-    el.innerHTML=`<div style="font-size:12px;color:var(--dim)">Enter distance + moving time to estimate calories · using ${body.weightKg}kg (${body.bodyFatPct}% BF, lean ${body.leanMassKg}kg) from ${body.source}</div>`;
+    el.innerHTML=`<div style="font-size:12px;color:var(--dim)">${!body.available?'Log body weight in Progress/Profile to estimate calories':'Enter distance + moving time to estimate calories'} · ${body.available?`${body.weightKg}kg (${body.bodyFatPct!=null?body.bodyFatPct+'% BF':'\u2014'} BF)`:'no weight yet'} · ${body.source}</div>`;
     return;
   }
   el.innerHTML=`<div style="font-size:13px;color:var(--txt);line-height:1.5">
       <b style="color:var(--cyan)">${est.grossKcal} kcal</b> estimated (ACSM) · net ~${est.netKcal} kcal above rest<br>
-      <span style="color:var(--mut);font-size:11px">${body.weightKg}kg · ${body.bodyFatPct}% BF · ${est.speedKmH} km/h · grade ~${est.gradePct}% from elev gain · ${body.source}</span>
+      <span style="color:var(--mut);font-size:11px">${body.weightKg}kg · ${body.bodyFatPct!=null?body.bodyFatPct+'% BF':'BF n/a'} · ${est.speedKmH} km/h · grade ~${est.gradePct}% from elev gain · ${body.source}</span>
     </div>`;
 }
 function onRunPaceTouched(){
@@ -1727,7 +1838,7 @@ function renderRunSummaryCard(run){
     <div class="cl">Run metrics</div>
     <div class="ct" style="color:var(--grn);margin-bottom:4px">${bits||'Run'}</div>
     ${elev?`<div style="font-size:13px;color:var(--mut);margin-bottom:6px">Elevation ${elev}${run.elevNetM!=null?` · net ${run.elevNetM>0?'+':''}${run.elevNetM}m`:''}</div>`:''}
-    ${run.caloriesMeta?`<div style="font-size:11px;color:var(--dim);margin-bottom:6px">${run.caloriesMeta.formula} · ${run.caloriesMeta.weightKg}kg @ ${run.caloriesMeta.bodyFatPct}% BF</div>`:''}
+    ${run.caloriesMeta?`<div style="font-size:11px;color:var(--dim);margin-bottom:6px">${run.caloriesMeta.formula} · ${run.caloriesMeta.weightKg}kg${run.caloriesMeta.bodyFatPct!=null?' @ '+run.caloriesMeta.bodyFatPct+'% BF':''}</div>`:''}
     ${run.stravaUrl?`<a href="${escHtml(run.stravaUrl)}" target="_blank" rel="noopener" style="font-size:13px;color:var(--cyan);font-weight:600">Open on Strava &#x2197;</a>`:''}
     ${run.note?`<div style="font-size:12px;color:var(--mut);margin-top:8px;font-style:italic">"${escHtml(run.note)}"</div>`:''}
   </div>`;
@@ -1760,7 +1871,7 @@ function renderCardioDaySection(gd,seqIdx){
   html+=`<div class="card" id="run-card" style="margin-bottom:10px">
     <div class="cl">Today\u2019s run</div>
     <div class="ct" style="margin-bottom:4px">${fmtLogDateLabel(dk)}</div>
-    <div class="cs" style="margin-bottom:12px">Using ${body.weightKg}kg · ${body.bodyFatPct}% BF (${body.source}) for calorie estimate.</div>
+    <div class="cs" style="margin-bottom:12px">${body.available?`Using ${body.weightKg}kg · ${body.bodyFatPct!=null?body.bodyFatPct+'% BF':'BF n/a'} (${body.source}) for calorie estimate.`:'No body weight logged yet \u2014 add it in Progress or Profile so calories can be estimated.'}</div>
     ${!stravaConnected()?`<div class="nt na" style="margin-bottom:12px">Connect Strava above once, then paste a link to autofill.</div>`:`<div class="nt ni" style="margin-bottom:12px">Strava connected. Paste a link and stats fill in automatically.</div>`}
     ${renderRunForm(run)}
     <div class="statrow" style="margin-top:8px"><div style="font-size:13px;color:var(--mut);min-width:130px;font-weight:500">Session note</div>
@@ -2367,10 +2478,60 @@ function renderLiftProgressCharts(){
       <div id="lift-chart-${key}">${buildLiftChartInner(key)}</div>
     </div>`;
   }).join('');
-  return`<div class="card" style="margin-bottom:12px;border-color:var(--cbr)">
+  return`<div id="lift-charts" class="card" style="margin-bottom:12px;border-color:var(--cbr)">
       <div class="cl">Lift trends</div>
       <div class="cs">Pick an exercise per day type. Y-axis = session average weight (volume-weighted by reps). X-axis = week or month averages. Running / cardio is excluded.</div>
     </div>`+cards;
+}
+
+/* ===== BODY COMPOSITION CHART ===== */
+function getBodyMetricHistory(metric){
+  const stats=lsG('bstats')||[];
+  return stats
+    .filter(s=>s[metric]!=null&&s[metric]!==''&&!Number.isNaN(parseFloat(s[metric])))
+    .map(s=>({date:s.date,avg:parseFloat(s[metric])}))
+    .sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+}
+function buildBodyStatsChartInner(){
+  const metric=_bodyChartState.metric||'wt';
+  const range=_bodyChartState.range||'week';
+  const hist=getBodyMetricHistory(metric);
+  const unit=metric==='bf'?'%':'kg';
+  const label=metric==='bf'?'Body fat':'Weight';
+  const asHist=hist.map(h=>({date:h.date,avg:h.avg,unit,metric:label,isPR:false}));
+  const agg=aggregateLiftHistory(asHist,range);
+  if(agg.points.length<2){
+    return`<div style="color:var(--dim);font-size:13px;padding:20px;text-align:center">${hist.length?`Need at least 2 ${range==='month'?'months':'weeks'} of ${label.toLowerCase()} logs`:`Log ${label.toLowerCase()} at least twice to see a trend`}</div>
+      <div class="lift-chart-meta">${hist.length} log${hist.length===1?'':'s'} · ${range==='month'?'Monthly':'Weekly'} view</div>`;
+  }
+  const last=agg.points[agg.points.length-1],first=agg.points[0];
+  const delta=Math.round((last.y-first.y)*10)/10;
+  return`<div class="chart-wrap"><div class="chart-label">${label} (${unit})</div>${buildSVG(agg.points,metric==='bf'?'var(--amb)':'var(--cyan)',unit)}</div>
+    <div class="lift-chart-meta">Latest ${last.y}${unit} · change ${delta>0?'+':''}${delta}${unit} · ${hist.length} logs · ${range==='month'?'monthly':'weekly'} buckets</div>`;
+}
+function refreshBodyStatsChart(){
+  const el=document.getElementById('body-comp-chart');if(!el)return;
+  el.innerHTML=buildBodyStatsChartInner();
+}
+function onBodyChartMetricChange(v){_bodyChartState.metric=v;refreshBodyStatsChart();}
+function onBodyChartRangeChange(v){_bodyChartState.range=v;refreshBodyStatsChart();}
+function renderBodyStatsChart(){
+  const st=_bodyChartState;
+  return`<div class="card" style="margin-bottom:12px">
+    <div class="cl">Body composition trend</div>
+    <div class="ct" style="margin-bottom:8px">Weight or body fat over time</div>
+    <div class="lift-chart-row">
+      <select class="foodsel" aria-label="Body metric" onchange="onBodyChartMetricChange(this.value)">
+        <option value="wt"${st.metric==='wt'?' selected':''}>Weight (kg)</option>
+        <option value="bf"${st.metric==='bf'?' selected':''}>Body fat (%)</option>
+      </select>
+      <select class="foodsel" style="flex:0 0 120px" aria-label="Body time range" onchange="onBodyChartRangeChange(this.value)">
+        <option value="week"${st.range==='week'?' selected':''}>By week</option>
+        <option value="month"${st.range==='month'?' selected':''}>By month</option>
+      </select>
+    </div>
+    <div id="body-comp-chart">${buildBodyStatsChartInner()}</div>
+  </div>`;
 }
 
 /* ===== RENDER PROGRESS ===== */
@@ -2383,7 +2544,8 @@ function renderProgress(){
   const total=done+flare+miss;
   const score=total>0?Math.round((done+flare*0.5)/total*100):0;
   const scoreCol=score>=80?'var(--grn)':score>=60?'var(--amb)':'var(--red)';
-  const stats=lsG('bstats')||[];const latest=stats[stats.length-1];
+  const stats=lsG('bstats')||[];
+  const latest=[...stats].filter(s=>s.wt!=null||s.bf!=null).sort((a,b)=>String(a.date).localeCompare(String(b.date))).reverse()[0];
   const measurements=lsG('measurements')||[];const latestM=measurements[measurements.length-1];
   const lastExport=lsG('last_export');
   const nextIdx=getNextIdx();
@@ -2413,16 +2575,22 @@ function renderProgress(){
     <div class="pstat"><div class="pval" style="color:var(--grn)">${flare}</div><div class="plbl">flare days</div></div>
     <div class="pstat"><div class="pval" style="color:${miss>0?'var(--red)':'var(--cyan)'}">${miss}</div><div class="plbl">missed</div></div>
   </div>`;
+  html+=`<button class="btn btn-ghost btn-sm" style="width:100%;margin-bottom:12px" onclick="document.getElementById('lift-charts')?.scrollIntoView({behavior:'smooth',block:'start'})">Jump to Push / Pull / Legs charts &#x2193;</button>`;
 
-  html+=`<div class="card"><div class="cl">Body stats &mdash; weekly</div><div class="ct" style="margin-bottom:4px">Xiaomi Watch / scale (or manual)</div>
-    <div class="cs" style="margin-bottom:12px">Log once a week, same day and time. Weight + body fat here feed run calorie estimates.</div>
+  html+=`<div class="card"><div class="cl">Body stats</div><div class="ct" style="margin-bottom:4px">Log any day \u2014 not just weekly</div>
+    <div class="cs" style="margin-bottom:12px">Weight + body fat feed run calories and your profile. Log today, tomorrow, or catch up any past day.</div>
     ${latest?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
-      ${[['Weight',latest.wt,'kg'],['Body fat',latest.bf,'%'],['Muscle',latest.mm,'kg'],['Fat mass',latest.fm,'kg'],['Body water',latest.bw,latest.bwUnit||'%']].filter(([,v])=>v).map(([l,v,u])=>`<div style="background:var(--c2);border:1px solid var(--c3);border-radius:12px;padding:10px;text-align:center;flex:1;min-width:70px"><div style="font-size:18px;font-weight:800;font-family:'Barlow',sans-serif;color:var(--cyan)">${v}${u}</div><div style="font-size:10px;color:var(--mut);margin-top:2px;font-weight:600">${l}</div></div>`).join('')}
-    </div>`:''}
-    ${[['Weight (kg)','wt','85'],['Body fat (%)','bf','e.g. 25.7'],['Skeletal muscle (kg)','mm','30'],['Body water (kg)','bw','42']].map(([l,id,ph])=>`<div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:140px;font-weight:500">${l}</div><input class="sinput" type="number" inputmode="decimal" id="st_${id}" placeholder="${ph}" step="0.1" style="width:90px;text-align:center"></div>`).join('')}
-    <button class="btn btn-amb" onclick="saveStats()">Save this week's stats</button>
+      ${[['Weight',latest.wt,'kg'],['Body fat',latest.bf,'%'],['Muscle',latest.mm,'kg'],['Fat mass',latest.fm,'kg'],['Body water',latest.bw,latest.bwUnit||'%']].filter(([,v])=>v!=null&&v!=='').map(([l,v,u])=>`<div style="background:var(--c2);border:1px solid var(--c3);border-radius:12px;padding:10px;text-align:center;flex:1;min-width:70px"><div style="font-size:18px;font-weight:800;font-family:'Barlow',sans-serif;color:var(--cyan)">${v}${u}</div><div style="font-size:10px;color:var(--mut);margin-top:2px;font-weight:600">${l}</div></div>`).join('')}
+    </div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:10px">Latest log: ${latest.date}</div>`:`<div class="nt na" style="margin-bottom:12px">No body logs yet \u2014 add your weight (and BF if you have it).</div>`}
+    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:140px;font-weight:500">Log date</div>
+      <input class="sinput" type="date" id="st_date" max="${todayKey()}" value="${todayKey()}" style="width:150px;text-align:center"></div>
+    ${[['Weight (kg)','wt','e.g. 71'],['Body fat (%)','bf','e.g. 20'],['Skeletal muscle (kg)','mm','optional'],['Body water (kg)','bw','optional']].map(([l,id,ph])=>`<div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:140px;font-weight:500">${l}</div><input class="sinput" type="number" inputmode="decimal" id="st_${id}" placeholder="${ph}" step="0.1" style="width:90px;text-align:center"></div>`).join('')}
+    <button class="btn btn-amb" onclick="saveStats()">Save body stats</button>
     <div id="stconf" class="confbox">Stats saved &#x2713;</div>
   </div>`;
+
+  html+=renderBodyStatsChart();
 
   html+=`<div class="card"><div class="cl">Body measurements &mdash; tape measure</div><div class="ct" style="margin-bottom:4px">Track love handles here</div>
     <div class="cs" style="margin-bottom:12px">Waist is your love handle metric. Measure weekly at same time.</div>
@@ -2497,15 +2665,23 @@ function renderProgress(){
 }
 
 function saveStats(){
-  const entry={date:todayKey()};
-  ['wt','bf','mm','bw'].forEach(f=>{const v=document.getElementById('st_'+f)?.value;if(v)entry[f]=parseFloat(v);});
-  if(!entry.wt&&!entry.bf)return;
-  // Auto-calculate fat mass — no manual entry
-  if(entry.wt&&entry.bf)entry.fm=Math.round(entry.wt*entry.bf/100*10)/10;
-  // Tag body water as kg going forward
-  if(entry.bw)entry.bwUnit='kg';
-  const all=lsG('bstats')||[];all.push(entry);lsS('bstats',all.slice(-260));
-  updateHeader();const c=document.getElementById('stconf');if(c){c.style.display='block';setTimeout(()=>{c.style.display='none';renderProgress();},2000);}
+  const date=(document.getElementById('st_date')?.value||todayKey());
+  if(date>todayKey()){alert('Cannot log body stats in the future.');return;}
+  const entry={date};
+  ['wt','bf','mm','bw'].forEach(f=>{const v=document.getElementById('st_'+f)?.value;if(v!==''&&v!=null)entry[f]=parseFloat(v);});
+  if(entry.wt==null&&entry.bf==null){alert('Enter at least weight or body fat.');return;}
+  if(entry.wt!=null&&entry.bf!=null)entry.fm=Math.round(entry.wt*entry.bf/100*10)/10;
+  if(entry.bw!=null)entry.bwUnit='kg';
+  let all=lsG('bstats')||[];
+  const idx=all.findIndex(s=>s.date===date);
+  if(idx>=0)all[idx]={...all[idx],...entry};
+  else all.push(entry);
+  all.sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  lsS('bstats',all.slice(-400));
+  updateHeader();
+  const c=document.getElementById('stconf');
+  if(c){c.style.display='block';setTimeout(()=>{c.style.display='none';renderProgress();},1200);}
+  else renderProgress();
 }
 function saveMeasurements(){
   const entry={date:todayKey()};
@@ -2515,6 +2691,83 @@ function saveMeasurements(){
   const all=lsG('measurements')||[];all.push(entry);lsS('measurements',all.slice(-260));
   const c=document.getElementById('mconf');if(c){c.style.display='block';setTimeout(()=>{c.style.display='none';renderProgress();},2000);}
 }
+
+/* ===== PROFILE TAB ===== */
+function renderProfile(){
+  const auth=getAuth();
+  const prof=getProfile();
+  const t=prof.targets||{};
+  const body=getBodyForCalcs();
+  const clientId=getGoogleClientId();
+  const initials=((auth?.name||'G').trim()[0]||'G').toUpperCase();
+  let html='';
+
+  html+=`<div class="card" style="margin-bottom:12px">
+    <div class="cl">Account</div>
+    <div class="ct" style="margin-bottom:8px">${auth?'Signed in with Google':'Link a Gmail account'}</div>
+    ${auth?`
+      <div class="profile-hero">
+        ${auth.picture?`<img class="profile-avatar" src="${escHtml(auth.picture)}" alt="">`:`<div class="profile-avatar ph">${initials}</div>`}
+        <div style="min-width:0">
+          <div style="font-size:18px;font-weight:800;font-family:'Barlow',sans-serif">${escHtml(auth.name||'')}</div>
+          <div style="font-size:13px;color:var(--mut);overflow:hidden;text-overflow:ellipsis">${escHtml(auth.email||'')}</div>
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-sm" style="width:100%" onclick="signOutGoogle()">Sign out</button>
+    `:`
+      <div class="cs" style="margin-bottom:10px">Sign in so this phone knows whose bio and goals you\u2019re editing. Logs stay on this device (GitHub Pages has no private server).</div>
+      <div id="google-signin-btn"></div>
+    `}
+    <div id="auth-conf" class="confbox">Signed in &#x2713;</div>
+  </div>`;
+
+  html+=`<div class="card" style="margin-bottom:12px">
+    <div class="cl">Google Client ID</div>
+    <div class="ct" style="margin-bottom:4px">${clientId?'Configured':'One-time setup'}</div>
+    <div class="cs" style="margin-bottom:10px">1. Open <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener" style="color:var(--cyan)">Google Cloud Credentials</a><br>
+      2. Create an <b style="color:var(--txt)">OAuth 2.0 Client ID</b> (Web application)<br>
+      3. Add authorized JavaScript origin: <code style="color:var(--cyan)">${escHtml(location.origin||'https://your-pages-host')}</code><br>
+      4. Paste the Client ID below</div>
+    <input class="sinput" id="google-client-id" type="text" placeholder="xxxxx.apps.googleusercontent.com" value="${escHtml(clientId)}" style="width:100%;margin-bottom:8px">
+    <button class="btn btn-amb btn-sm" style="width:100%" onclick="saveGoogleClientId()">Save Client ID</button>
+    <div id="gci-conf" class="confbox">Client ID saved &#x2713;</div>
+  </div>`;
+
+  html+=`<div class="card" style="margin-bottom:12px">
+    <div class="cl">Your bio</div>
+    <div class="ct" style="margin-bottom:4px">Stable profile fields</div>
+    <div class="cs" style="margin-bottom:12px">Height and goals live here. Current weight / body fat come from Progress logs (any day) \u2014 nothing is fixed forever.</div>
+    ${body.available?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+      <div style="background:var(--c2);border:1px solid var(--c3);border-radius:12px;padding:10px;text-align:center;flex:1;min-width:70px"><div style="font-size:18px;font-weight:800;font-family:'Barlow',sans-serif;color:var(--cyan)">${body.weightKg}kg</div><div style="font-size:10px;color:var(--mut);margin-top:2px;font-weight:600">Latest weight</div></div>
+      <div style="background:var(--c2);border:1px solid var(--c3);border-radius:12px;padding:10px;text-align:center;flex:1;min-width:70px"><div style="font-size:18px;font-weight:800;font-family:'Barlow',sans-serif;color:var(--cyan)">${body.bodyFatPct!=null?body.bodyFatPct+'%':'—'}</div><div style="font-size:10px;color:var(--mut);margin-top:2px;font-weight:600">Latest BF</div></div>
+    </div>
+    <div style="font-size:11px;color:var(--dim);margin-bottom:10px">From ${escHtml(body.source)} · update anytime in Progress</div>`:`<div class="nt na" style="margin-bottom:12px">No weight logged yet \u2014 open Progress and save body stats for any date.</div>`}
+    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:140px;font-weight:500">Height (cm)</div>
+      <input class="sinput" type="number" inputmode="decimal" id="bio-height" step="0.1" value="${prof.heightCm??''}" placeholder="175" style="width:90px;text-align:center"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:140px;font-weight:500">Goal weight (kg)</div>
+      <input class="sinput" type="number" inputmode="decimal" id="bio-goal-wt" step="0.1" value="${prof.goalWeight??''}" placeholder="70" style="width:90px;text-align:center"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:140px;font-weight:500">Goal body fat (%)</div>
+      <input class="sinput" type="number" inputmode="decimal" id="bio-goal-bf" step="0.1" value="${prof.goalBF??''}" placeholder="14" style="width:90px;text-align:center"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:140px;font-weight:500">Training days / week</div>
+      <input class="sinput" type="number" inputmode="numeric" id="bio-days" step="1" min="1" max="7" value="${prof.trainingDaysPerWeek??4}" style="width:90px;text-align:center"></div>
+    <button class="btn btn-grn btn-sm" style="width:100%;margin-top:8px" onclick="saveBioProfile()">Save bio</button>
+    <div id="bio-conf" class="confbox">Bio saved &#x2713;</div>
+  </div>`;
+
+  html+=`<div class="card" style="margin-bottom:12px">
+    <div class="cl">Daily targets</div>
+    <div class="ct" style="margin-bottom:8px">Used on the Food tab</div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut)">Protein (g)</div><input class="sinput" type="number" id="prof-protein" value="${t.protein||140}" style="width:80px"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut)">Kcal</div><input class="sinput" type="number" id="prof-kcal" value="${t.kcal||2200}" style="width:80px"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut)">Carbs (g)</div><input class="sinput" type="number" id="prof-carbs" value="${t.carbs||220}" style="width:80px"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut)">Fat (g)</div><input class="sinput" type="number" id="prof-fat" value="${t.fat||65}" style="width:80px"></div>
+    <button class="btn btn-grn btn-sm" style="width:100%;margin-top:10px" onclick="saveTargets()">Save targets</button>
+  </div>`;
+
+  document.getElementById('p2').innerHTML=html;
+  setTimeout(initGoogleSignIn,30);
+}
+
 /* ===== FOOD ===== */
 function allFoods(){const c=lsG('custom_foods')||[];return[...FOODS,...c.map(f=>({...f,cat:'My foods'}))];}
 function foodOptsHtml(){
@@ -2550,7 +2803,7 @@ function renderFood(){
   const mealGap=_foodDay==='today'?getMealGapSuggestion():null;
   const swaps=_foodDay==='today'?getSwapSuggestions():[];
 
-  document.getElementById('p2').innerHTML=`
+  document.getElementById('p3').innerHTML=`
   ${mealGap&&mealGap.needed?`<div class="card warm" style="margin-bottom:10px">
     <div class="cl">Close today's gap</div>
     <div class="cs" style="margin-bottom:10px">${mealGap.proteinGap}g protein short, ${mealGap.kcalRemaining} kcal left in today's budget</div>
@@ -3411,7 +3664,7 @@ function renderHistory(){
     ${biol?`<div class="nt ni" style="margin-top:8px">Biologics start: ${biol}</div>`:''}
   </div>`;
 
-  document.getElementById('p3').innerHTML=html;
+  document.getElementById('p4').innerHTML=html;
 }
 
 function saveBiol(){
@@ -3592,10 +3845,10 @@ function renderRecipes(){
         <button onclick="deleteRecipeFood(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:22px;padding:6px;min-width:44px;min-height:44px">&times;</button>
       </div>
       ${f.photo?`<img src="${f.photo}" alt="" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;margin-top:8px;border:1px solid var(--c3)">`:''}
-      <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="quickLog('${f.name.replace(/'/g,"\\'")}');document.querySelectorAll('.tab')[2].click()">+ Log now</button>
+      <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="quickLog('${f.name.replace(/'/g,"\\'")}');document.querySelector('.tab[data-t=\"3\"]').click()">+ Log now</button>
     </div>`).join(''):`<div style="font-size:13px;color:var(--dim);padding:8px 0">No saved recipes yet — snap a HelloFresh pack or supplement label above.</div>`;
 
-  document.getElementById('p4').innerHTML=`
+  document.getElementById('p5').innerHTML=`
   <div class="card cyan" style="margin-bottom:12px">
     <div class="cl">Photo → recipe</div>
     <div class="ct" style="margin-bottom:4px">Save a nutrition label once, reuse forever</div>
@@ -3653,9 +3906,10 @@ document.querySelectorAll('.tab').forEach(btn=>{
     stopTimerTick();
     if(t===0){renderToday();}else{showStickyBtn(false);}
     if(t===1)renderProgress();
-    if(t===2)renderFood();
-    if(t===3)renderHistory();
-    if(t===4)renderRecipes();
+    if(t===2)renderProfile();
+    if(t===3)renderFood();
+    if(t===4)renderHistory();
+    if(t===5)renderRecipes();
   });
 });
 
@@ -3690,13 +3944,25 @@ if(!Data.session.get(activeDateKey())){
     }
   }
 }
-document.getElementById('hsub').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long'})+' \u00b7 Recomp: lower BF, add muscle (71kg \u00b7 20% BF)';
+function updateHeaderSub(){
+  const body=getBodyForCalcs();
+  const auth=getAuth();
+  const who=auth?.name?auth.name.split(' ')[0]+' \u00b7 ':'';
+  const bio=body.available
+    ?`${body.weightKg}kg${body.bodyFatPct!=null?' \u00b7 '+body.bodyFatPct+'% BF':''}`
+    :'add body stats in Progress';
+  const el=document.getElementById('hsub');
+  if(el)el.textContent=new Date().toLocaleDateString('en-GB',{weekday:'long'})+' \u00b7 '+who+'Recomp ('+bio+')';
+}
+document.getElementById('hsub').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long'})+' \u00b7 Recomp: set your bio in Profile / Progress';
 if(navigator.storage&&navigator.storage.persist){
   (async()=>{try{const granted=await navigator.storage.persist();lsS('storage_persisted',granted);}catch{lsS('storage_persisted',false);}})();
 }
 updateHeader();
+updateHeaderSub();
 renderToday();
 renderRecipes();
+window.addEventListener('load',()=>setTimeout(initGoogleSignIn,300));
 </script>
 </body>
 </html>
