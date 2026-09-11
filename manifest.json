@@ -4,8 +4,8 @@
   "description": "Personal gym tracker — workouts, food, recipes, progress",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#15110D",
-  "theme_color": "#E0A339",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "orientation": "portrait-primary",
   "icons": [
     {

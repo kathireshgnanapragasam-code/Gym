@@ -5,54 +5,59 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#E0A339">
+<meta name="theme-color" content="#000000">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.png" type="image/png">
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="apple-mobile-web-app-title" content="Gym">
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <title>Gym v1.0</title>
 <style>
 :root{
-  --bg:#15110D;--c1:#1E1811;--c2:#2A2118;--c3:#3D2F1F;
-  --cyan:#E0A339;--cbg:rgba(224,163,57,.14);--cbr:rgba(224,163,57,.32);
-  --amb:#C9722E;--abg:rgba(201,114,46,.15);--abr:rgba(201,114,46,.32);
-  --txt:#F3E9D8;--mut:#A6906F;--dim:#6E5D45;
-  --grn:#8FAE63;--gbg:rgba(143,174,99,.14);--gbr:rgba(143,174,99,.32);
-  --red:#C2404A;--rbg:rgba(194,64,74,.14);--rbr:rgba(194,64,74,.32);
-  --gold:#D4AF37;--purple:#8B6F9E
+  --bg:#000000;--c1:#121212;--c2:#1A1A1A;--c3:#2B2B2B;
+  --cyan:#FFFFFF;--cbg:rgba(255,255,255,.08);--cbr:rgba(255,255,255,.22);
+  --amb:#B0B0B0;--abg:rgba(176,176,176,.12);--abr:rgba(176,176,176,.28);
+  --txt:#FFFFFF;--mut:#9A9A9A;--dim:#5C5C5C;
+  --grn:#7DCF8A;--gbg:rgba(125,207,138,.12);--gbr:rgba(125,207,138,.28);
+  --red:#E05A63;--rbg:rgba(224,90,99,.14);--rbr:rgba(224,90,99,.32);
+  --gold:#E8E8E8;--purple:#8A8A8A
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{background:var(--bg);color:var(--txt);font-family:"IBM Plex Sans",-apple-system,sans-serif;font-size:15px;max-width:480px;margin:0 auto;padding-bottom:90px}
+body{
+  background:
+    radial-gradient(ellipse 120% 60% at 50% -10%,rgba(255,255,255,.06) 0%,transparent 55%),
+    linear-gradient(180deg,#0A0A0A 0%,#000000 45%,#000000 100%);
+  background-attachment:fixed;
+  color:var(--txt);font-family:"IBM Plex Sans",-apple-system,sans-serif;font-size:15px;max-width:480px;margin:0 auto;padding-bottom:90px;min-height:100vh
+}
 /* HEADER */
-.hdr{padding:16px 16px 12px;background:var(--bg);position:sticky;top:0;z-index:20;border-bottom:1px solid var(--c3)}
+.hdr{padding:16px 16px 12px;background:rgba(0,0,0,.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);position:sticky;top:0;z-index:20;border-bottom:1px solid var(--c3)}
 .hdr-toprow{display:flex;justify-content:space-between;align-items:center}
 .vtag{font-size:10px;color:var(--dim);background:var(--c2);border:1px solid var(--c3);border-radius:20px;padding:2px 9px;font-weight:700;letter-spacing:.5px}
-.ht{font-size:24px;font-family:"Barlow",sans-serif;font-weight:900;background:linear-gradient(90deg,var(--txt) 50%,var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.hs{font-size:13px;color:var(--mut);margin-top:3px}
+.ht{font-size:24px;font-family:"Barlow",sans-serif;font-weight:900;color:var(--txt);letter-spacing:.04em;text-transform:uppercase}
+.hs{font-size:13px;color:var(--mut);margin-top:3px;letter-spacing:.08em;text-transform:uppercase}
 .mrow{display:flex;gap:6px;margin-top:10px}
-.met{flex:1;background:var(--c1);border:1px solid var(--c3);border-radius:12px;padding:9px 6px;text-align:center;position:relative;overflow:hidden}
-.met::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--cyan),transparent)}
-.mv{font-size:18px;font-family:"Barlow",sans-serif;font-weight:800;color:var(--cyan)}
+.met{flex:1;background:var(--c1);border:1px solid var(--c3);border-radius:14px;padding:9px 6px;text-align:center;position:relative;overflow:hidden}
+.met::before{content:"";position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent)}
+.mv{font-size:18px;font-family:"Barlow",sans-serif;font-weight:800;color:var(--txt)}
 .hdricon{font-size:14px;opacity:.7;vertical-align:1px}
 .mv.warn{color:var(--amb)}
-.ml{font-size:10px;color:var(--mut);margin-top:1px;font-weight:500}
+.ml{font-size:10px;color:var(--mut);margin-top:1px;font-weight:500;letter-spacing:.04em;text-transform:uppercase}
 /* TABS */
-.tabs{display:flex;background:var(--c1);border-bottom:1px solid var(--c3);overflow-x:auto;scrollbar-width:none}
+.tabs{display:flex;background:rgba(18,18,18,.96);border-bottom:1px solid var(--c3);overflow-x:auto;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
-.tab{padding:14px 18px;border:none;background:transparent;color:var(--mut);font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:"IBM Plex Sans",sans-serif;border-bottom:2px solid transparent;flex-shrink:0;transition:color .2s}
-.tab.on{color:var(--cyan);border-bottom-color:var(--cyan)}
+.tab{padding:14px 18px;border:none;background:transparent;color:var(--mut);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:"IBM Plex Sans",sans-serif;border-bottom:2px solid transparent;flex-shrink:0;transition:color .2s;letter-spacing:.06em;text-transform:uppercase}
+.tab.on{color:var(--txt);border-bottom-color:var(--txt)}
 .pnl{padding:14px;display:none}
 .pnl.on{display:block}
 /* CARDS */
 .card{background:var(--c1);border:1px solid var(--c3);border-radius:16px;padding:16px;margin-bottom:12px}
-.card.gym{border-color:var(--cbr);box-shadow:0 0 24px rgba(0,194,212,.06)}
+.card.gym{border-color:var(--cbr);box-shadow:0 0 24px rgba(255,255,255,.04)}
 .card.success{border-color:var(--gbr)}
 .card.warm{border-color:var(--abr)}
 .card.danger{border-color:var(--rbr)}
-.card.cyan{border-color:var(--cbr);background:linear-gradient(135deg,var(--c1),rgba(0,194,212,.05))}
+.card.cyan{border-color:var(--cbr);background:linear-gradient(135deg,var(--c1),rgba(255,255,255,.03))}
 .cl{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:2px;margin-bottom:3px;font-weight:700}
 .ct{font-size:17px;font-weight:700;font-family:"Barlow",sans-serif}
 .cs{font-size:13px;color:var(--mut);margin-top:3px;line-height:1.5}
@@ -60,7 +65,7 @@ body{background:var(--bg);color:var(--txt);font-family:"IBM Plex Sans",-apple-sy
 /* BADGES + NOTICES */
 .pill{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;display:inline-block}
 .pg{background:var(--gbg);color:var(--grn)}.pa{background:var(--abg);color:var(--amb)}.pr{background:var(--rbg);color:var(--red)}.pi{background:var(--cbg);color:var(--cyan)}.pd{background:var(--c2);color:var(--mut)}
-.pill-pr{background:linear-gradient(90deg,rgba(212,175,55,.15),var(--cbg));color:var(--gold);border:1px solid rgba(212,175,55,.35);font-size:12px;padding:4px 12px;font-family:"Barlow",sans-serif;font-weight:800}
+.pill-pr{background:linear-gradient(90deg,rgba(255,255,255,.08),var(--cbg));color:var(--gold);border:1px solid rgba(255,255,255,.28);font-size:12px;padding:4px 12px;font-family:"Barlow",sans-serif;font-weight:800}
 .nt{border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;margin-top:10px;line-height:1.5}
 .ng{background:var(--gbg);color:var(--grn)}.na{background:var(--abg);color:var(--amb)}.nr{background:var(--rbg);color:var(--red)}.ni{background:var(--cbg);color:var(--cyan)}
 .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;display:inline-block}
@@ -125,14 +130,14 @@ body{background:var(--bg);color:var(--txt);font-family:"IBM Plex Sans",-apple-sy
 textarea.genin{resize:none}
 /* BUTTONS */
 .btn{padding:15px 16px;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:"IBM Plex Sans",sans-serif;width:100%;margin-top:10px;display:block;text-align:center;transition:opacity .2s,transform .1s}
-.btn-amb{background:var(--amb);color:#000}.btn-cyan{background:var(--cyan);color:#000}
+.btn-amb{background:var(--txt);color:#000}.btn-cyan{background:var(--txt);color:#000}
 .btn-ghost{background:var(--c2);color:var(--txt);border:1px solid var(--c3)}
 .btn-grn{background:var(--gbg);color:var(--grn);border:1px solid var(--gbr)}
 .btn-sm{padding:10px 14px;font-size:13px;margin-top:6px}
 .btn:active{opacity:.85;transform:scale(.98)}
 /* STICKY SAVE */
 .sticky-wrap{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);width:calc(min(480px,100vw) - 28px);z-index:100;display:none}
-.sticky-save{background:linear-gradient(135deg,var(--cyan),var(--amb));color:#000;border:none;border-radius:16px;font-size:17px;font-weight:900;font-family:"Barlow",sans-serif;cursor:pointer;width:100%;padding:18px;box-shadow:0 4px 28px rgba(224,163,57,.4)}
+.sticky-save{background:var(--txt);color:#000;border:none;border-radius:999px;font-size:15px;font-weight:900;font-family:"Barlow",sans-serif;cursor:pointer;width:100%;padding:18px;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 8px 28px rgba(255,255,255,.18)}
 .sticky-save:active{transform:scale(.97)}
 /* CONFBOX + SKIP */
 .confbox{background:var(--gbg);color:var(--grn);border:1px solid var(--gbr);border-radius:14px;padding:14px;font-size:15px;font-weight:700;text-align:center;display:none;margin-top:10px}
@@ -142,8 +147,8 @@ textarea.genin{resize:none}
 /* PROGRESS */
 .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
 .pstat{background:var(--c1);border:1px solid var(--c3);border-radius:14px;padding:14px;text-align:center}
-.pval{font-size:28px;font-weight:900;font-family:"Barlow",sans-serif;color:var(--cyan)}
-.plbl{font-size:11px;color:var(--mut);margin-top:3px;font-weight:600}
+.pval{font-size:28px;font-weight:900;font-family:"Barlow",sans-serif;color:var(--txt)}
+.plbl{font-size:11px;color:var(--mut);margin-top:3px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
 .prog-bar{background:var(--c2);border-radius:4px;height:6px;margin:5px 0;overflow:hidden}
 .prog-fill{height:6px;border-radius:4px;transition:width .4s ease}
 .statrow{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--c3);gap:8px}
@@ -160,11 +165,11 @@ textarea.genin{resize:none}
 .macval{font-weight:700;color:var(--cyan);font-family:"Barlow",sans-serif;font-size:16px}
 .seg{display:flex;background:var(--c2);border-radius:12px;padding:3px;gap:3px;margin-bottom:12px}
 .segb{flex:1;padding:10px 6px;border:none;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;background:transparent;color:var(--mut);font-family:"IBM Plex Sans",sans-serif;white-space:nowrap;transition:color .2s}
-.segb.on{background:var(--c1);color:var(--cyan);box-shadow:0 0 12px rgba(0,194,212,.1)}
+.segb.on{background:var(--c1);color:var(--txt);box-shadow:0 0 12px rgba(255,255,255,.06)}
 /* MEAL TABLE */
 .meal-group{margin-bottom:14px}
 .meal-hd{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--c2);border-radius:10px;margin-bottom:6px;cursor:pointer}
-.meal-hd-name{font-size:12px;font-weight:800;color:var(--cyan);letter-spacing:1px;text-transform:uppercase}
+.meal-hd-name{font-size:12px;font-weight:800;color:var(--txt);letter-spacing:1px;text-transform:uppercase}
 .meal-hd-totals{font-size:12px;color:var(--mut);font-weight:600}
 .meal-item{display:flex;justify-content:space-between;align-items:center;padding:9px 6px;border-bottom:1px solid var(--c3);gap:8px}
 .meal-item:last-child{border-bottom:none}
@@ -189,7 +194,7 @@ textarea.genin{resize:none}
 .free-ex-row:last-child{border-bottom:none}
 .sess-option:last-child{margin-bottom:0}
 .sess-option:active{border-color:var(--cyan)}
-.sess-option.suggested{border-color:var(--cbr);background:rgba(0,194,212,.04)}
+.sess-option.suggested{border-color:var(--cbr);background:rgba(255,255,255,.03)}
 /* MEASUREMENTS */
 .meas-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
 .meas-stat{background:var(--c2);border-radius:10px;padding:10px;text-align:center}
@@ -217,9 +222,6 @@ textarea.genin{resize:none}
 .lift-chart-row .foodsel{flex:1;min-width:140px;margin-bottom:0}
 .lift-chart-meta{font-size:12px;color:var(--mut);margin-top:8px;line-height:1.4}
 .profile-hero{display:flex;gap:12px;align-items:center;margin-bottom:12px}
-.profile-avatar{width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid var(--cbr);background:var(--c2)}
-.profile-avatar.ph{display:flex;align-items:center;justify-content:center;font-weight:800;font-family:"Barlow",sans-serif;color:var(--cyan);font-size:20px}
-#google-signin-btn{min-height:44px;display:flex;justify-content:center;overflow:hidden}
 </style>
 </head>
 <body>
@@ -458,81 +460,7 @@ function getProfile(){
   if(!p.targets)p.targets={protein:140,kcal:2200,carbs:220,fat:65};
   return p;
 }
-function getAuth(){return lsG('auth_user');}
-function setAuth(u){lsS('auth_user',u);}
-function clearAuth(){lsDel('auth_user');}
-function isSignedIn(){return!!(getAuth()&&getAuth().email);}
-function getGoogleClientId(){return(lsG('google_client_id')||'').trim();}
-function decodeJwtPayload(token){
-  try{
-    const base=String(token).split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
-    const json=decodeURIComponent(atob(base).split('').map(c=>'%'+(('00'+c.charCodeAt(0).toString(16)).slice(-2))).join(''));
-    return JSON.parse(json);
-  }catch(e){return null;}
-}
-function handleGoogleCredential(response){
-  const p=decodeJwtPayload(response?.credential);
-  if(!p?.email){alert('Google sign-in failed — try again.');return;}
-  setAuth({
-    sub:p.sub,
-    email:p.email,
-    name:p.name||p.email.split('@')[0],
-    picture:p.picture||null,
-    signedInAt:new Date().toISOString()
-  });
-  const conf=document.getElementById('auth-conf');
-  if(conf){conf.style.display='block';setTimeout(()=>conf.style.display='none',2000);}
-  renderProfile();
-  updateHeader();
-}
-function saveGoogleClientId(){
-  const v=(document.getElementById('google-client-id')?.value||'').trim();
-  if(!v){alert('Paste your Google OAuth Client ID first.');return;}
-  lsS('google_client_id',v);
-  const c=document.getElementById('gci-conf');if(c){c.style.display='block';setTimeout(()=>c.style.display='none',1500);}
-  renderProfile();
-  setTimeout(initGoogleSignIn,50);
-}
-function signOutGoogle(){
-  if(!confirm('Sign out on this device? Workout and body logs stay saved locally.'))return;
-  clearAuth();
-  try{if(window.google?.accounts?.id)google.accounts.id.disableAutoSelect();}catch(e){}
-  renderProfile();
-  updateHeader();
-}
-function initGoogleSignIn(){
-  const clientId=getGoogleClientId();
-  const btn=document.getElementById('google-signin-btn');
-  if(!btn)return;
-  if(!clientId){
-    btn.innerHTML='<div class="cs" style="margin:0">Add a Google Client ID below to enable Gmail sign-in.</div>';
-    return;
-  }
-  if(!window.google?.accounts?.id){
-    btn.innerHTML='<div class="cs" style="margin:0">Loading Google\u2026</div>';
-    setTimeout(initGoogleSignIn,400);
-    return;
-  }
-  try{
-    google.accounts.id.initialize({
-      client_id:clientId,
-      callback:handleGoogleCredential,
-      auto_select:false,
-      cancel_on_tap_outside:true
-    });
-    btn.innerHTML='';
-    google.accounts.id.renderButton(btn,{
-      type:'standard',
-      theme:'filled_black',
-      size:'large',
-      text:'continue_with',
-      shape:'rectangular',
-      width:Math.min(320,btn.clientWidth||280)
-    });
-  }catch(e){
-    btn.innerHTML='<div class="cs" style="color:var(--red);margin:0">Google button failed: '+(e.message||e)+'</div>';
-  }
-}
+function clearLegacyAuth(){try{localStorage.removeItem('auth_user');localStorage.removeItem('google_client_id');}catch(e){}}
 function getBodyForCalcs(){
   const prof=getProfile();
   const stats=lsG('bstats')||[];
@@ -739,6 +667,7 @@ let _liftChartState={
   legs:{ex:null,range:'week'}
 };
 let _bodyChartState={metric:'wt',range:'week'};
+let _profileBodyCharts={wt:'week',bf:'week'};
 const LIFT_CHART_DAYS={push:'Push day',pull:'Pull day',legs:'Legs day'};
 function setProgressDiagMode(mode){
   _progressDiagMode=mode;
@@ -2431,10 +2360,25 @@ function getExAvgLoadHistory(exerciseName){
   }
   return results.sort((a,b)=>a.date.localeCompare(b.date));
 }
+function dayBucketLabel(dateStr){
+  const d=new Date(dateStr+'T12:00:00');
+  return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+}
 function aggregateLiftHistory(history,range){
   if(!history.length)return{points:[],unit:'kg',metric:'Avg weight'};
   const unit=history[history.length-1].unit;
   const metric=history[history.length-1].metric;
+  if(range==='day'){
+    const sorted=[...history].sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+    const sliced=sorted.slice(-40);
+    const points=sliced.map(h=>({
+      y:Math.round(h.avg*10)/10,
+      date:h.date,
+      label:dayBucketLabel(h.date),
+      pr:!!h.isPR
+    }));
+    return{points,unit,metric};
+  }
   const buckets={};
   history.forEach(h=>{
     const key=range==='month'?h.date.slice(0,7):weekStartKey(h.date);
@@ -2533,13 +2477,13 @@ function buildBodyStatsChartInner(){
   const asHist=hist.map(h=>({date:h.date,avg:h.avg,unit,metric:label,isPR:false}));
   const agg=aggregateLiftHistory(asHist,range);
   if(agg.points.length<2){
-    return`<div style="color:var(--dim);font-size:13px;padding:20px;text-align:center">${hist.length?`Need at least 2 ${range==='month'?'months':'weeks'} of ${label.toLowerCase()} logs`:`Log ${label.toLowerCase()} at least twice to see a trend`}</div>
-      <div class="lift-chart-meta">${hist.length} log${hist.length===1?'':'s'} · ${range==='month'?'Monthly':'Weekly'} view</div>`;
+    return`<div style="color:var(--dim);font-size:13px;padding:20px;text-align:center">${hist.length?`Need at least 2 ${range==='month'?'months':(range==='day'?'days':'weeks')} of ${label.toLowerCase()} logs`:`Log ${label.toLowerCase()} at least twice to see a trend`}</div>
+      <div class="lift-chart-meta">${hist.length} log${hist.length===1?'':'s'} · ${range} view</div>`;
   }
   const last=agg.points[agg.points.length-1],first=agg.points[0];
   const delta=Math.round((last.y-first.y)*10)/10;
   return`<div class="chart-wrap"><div class="chart-label">${label} (${unit})</div>${buildSVG(agg.points,metric==='bf'?'var(--amb)':'var(--cyan)',unit)}</div>
-    <div class="lift-chart-meta">Latest ${last.y}${unit} · change ${delta>0?'+':''}${delta}${unit} · ${hist.length} logs · ${range==='month'?'monthly':'weekly'} buckets</div>`;
+    <div class="lift-chart-meta">Latest ${last.y}${unit} · change ${delta>0?'+':''}${delta}${unit} · ${hist.length} logs · by ${range}</div>`;
 }
 function refreshBodyStatsChart(){
   const el=document.getElementById('body-comp-chart');if(!el)return;
@@ -2558,6 +2502,7 @@ function renderBodyStatsChart(){
         <option value="bf"${st.metric==='bf'?' selected':''}>Body fat (%)</option>
       </select>
       <select class="foodsel" style="flex:0 0 120px" aria-label="Body time range" onchange="onBodyChartRangeChange(this.value)">
+        <option value="day"${st.range==='day'?' selected':''}>By day</option>
         <option value="week"${st.range==='week'?' selected':''}>By week</option>
         <option value="month"${st.range==='month'?' selected':''}>By month</option>
       </select>
@@ -2725,55 +2670,99 @@ function saveMeasurements(){
 }
 
 /* ===== PROFILE TAB ===== */
+function rangeBucketWord(range){
+  return range==='month'?'months':(range==='day'?'days':'weeks');
+}
+function buildProfileBodyChartInner(metric){
+  const range=_profileBodyCharts[metric]||'week';
+  const hist=getBodyMetricHistory(metric);
+  const unit=metric==='bf'?'%':'kg';
+  const label=metric==='bf'?'Body fat':'Weight';
+  const asHist=hist.map(h=>({date:h.date,avg:h.avg,unit,metric:label,isPR:false}));
+  const agg=aggregateLiftHistory(asHist,range);
+  const need=2;
+  if(agg.points.length<need){
+    return`<div style="color:var(--dim);font-size:13px;padding:20px;text-align:center">${hist.length?`Need at least 2 ${rangeBucketWord(range)} of ${label.toLowerCase()} logs`:`Log ${label.toLowerCase()} at least twice to see a trend`}</div>
+      <div class="lift-chart-meta">${hist.length} log${hist.length===1?'':'s'} · ${range} view</div>`;
+  }
+  const last=agg.points[agg.points.length-1],first=agg.points[0];
+  const delta=Math.round((last.y-first.y)*10)/10;
+  return`<div class="chart-wrap"><div class="chart-label">${label} (${unit})</div>${buildSVG(agg.points,metric==='bf'?'var(--amb)':'var(--cyan)',unit)}</div>
+    <div class="lift-chart-meta">Latest ${last.y}${unit} · change ${delta>0?'+':''}${delta}${unit} · ${hist.length} logs · by ${range}</div>`;
+}
+function refreshProfileBodyChart(metric){
+  const el=document.getElementById('profile-chart-'+metric);if(!el)return;
+  el.innerHTML=buildProfileBodyChartInner(metric);
+}
+function onProfileBodyRangeChange(metric,range){
+  _profileBodyCharts[metric]=range;
+  refreshProfileBodyChart(metric);
+}
+function renderProfileBodyCharts(){
+  return['wt','bf'].map(metric=>{
+    const title=metric==='bf'?'Body fat trend':'Weight trend';
+    const unit=metric==='bf'?'%':'kg';
+    const st=_profileBodyCharts[metric]||'week';
+    return`<div class="card" style="margin-bottom:12px">
+      <div class="cl">${title}</div>
+      <div class="ct" style="margin-bottom:8px">${metric==='bf'?'Body fat % over time':'Weight in kg over time'}</div>
+      <div class="lift-chart-row">
+        <select class="foodsel" aria-label="${title} time range" onchange="onProfileBodyRangeChange('${metric}',this.value)">
+          <option value="day"${st==='day'?' selected':''}>By day</option>
+          <option value="week"${st==='week'?' selected':''}>By week</option>
+          <option value="month"${st==='month'?' selected':''}>By month</option>
+        </select>
+      </div>
+      <div id="profile-chart-${metric}">${buildProfileBodyChartInner(metric)}</div>
+      <div class="cs" style="margin-top:8px">Vertical = ${unit} · Horizontal = day / week / month</div>
+    </div>`;
+  }).join('');
+}
+function saveProfileBodyStats(){
+  const date=(document.getElementById('pb_date')?.value||todayKey());
+  if(date>todayKey()){alert('Cannot log body stats in the future.');return;}
+  const entry={date};
+  const wt=document.getElementById('pb_wt')?.value;
+  const bf=document.getElementById('pb_bf')?.value;
+  if(wt!==''&&wt!=null)entry.wt=parseFloat(wt);
+  if(bf!==''&&bf!=null)entry.bf=parseFloat(bf);
+  if(entry.wt==null&&entry.bf==null){alert('Enter at least weight or body fat.');return;}
+  if(entry.wt!=null&&entry.bf!=null)entry.fm=Math.round(entry.wt*entry.bf/100*10)/10;
+  let all=lsG('bstats')||[];
+  const idx=all.findIndex(s=>s.date===date);
+  if(idx>=0)all[idx]={...all[idx],...entry};
+  else all.push(entry);
+  all.sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  lsS('bstats',all.slice(-400));
+  const c=document.getElementById('pb-conf');
+  if(c){c.style.display='block';setTimeout(()=>c.style.display='none',1200);}
+  updateHeader();
+  renderProfile();
+}
 function renderProfile(){
-  const auth=getAuth();
   const prof=getProfile();
   const t=prof.targets||{};
   const body=getBodyForCalcs();
-  const clientId=getGoogleClientId();
-  const initials=((auth?.name||'G').trim()[0]||'G').toUpperCase();
   let html='';
 
   html+=`<div class="card" style="margin-bottom:12px">
-    <div class="cl">Account</div>
-    <div class="ct" style="margin-bottom:8px">${auth?'Signed in with Google':'Link a Gmail account'}</div>
-    ${auth?`
-      <div class="profile-hero">
-        ${auth.picture?`<img class="profile-avatar" src="${escHtml(auth.picture)}" alt="">`:`<div class="profile-avatar ph">${initials}</div>`}
-        <div style="min-width:0">
-          <div style="font-size:18px;font-weight:800;font-family:'Barlow',sans-serif">${escHtml(auth.name||'')}</div>
-          <div style="font-size:13px;color:var(--mut);overflow:hidden;text-overflow:ellipsis">${escHtml(auth.email||'')}</div>
-        </div>
-      </div>
-      <button class="btn btn-ghost btn-sm" style="width:100%" onclick="signOutGoogle()">Sign out</button>
-    `:`
-      <div class="cs" style="margin-bottom:10px">Sign in so this phone knows whose bio and goals you\u2019re editing. Logs stay on this device (GitHub Pages has no private server).</div>
-      <div id="google-signin-btn"></div>
-    `}
-    <div id="auth-conf" class="confbox">Signed in &#x2713;</div>
-  </div>`;
-
-  html+=`<div class="card" style="margin-bottom:12px">
-    <div class="cl">Google Client ID</div>
-    <div class="ct" style="margin-bottom:4px">${clientId?'Configured':'One-time setup'}</div>
-    <div class="cs" style="margin-bottom:10px">1. Open <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener" style="color:var(--cyan)">Google Cloud Credentials</a><br>
-      2. Create an <b style="color:var(--txt)">OAuth 2.0 Client ID</b> (Web application)<br>
-      3. Add authorized JavaScript origin: <code style="color:var(--cyan)">${escHtml(location.origin||'https://your-pages-host')}</code><br>
-      4. Paste the Client ID below</div>
-    <input class="sinput" id="google-client-id" type="text" placeholder="xxxxx.apps.googleusercontent.com" value="${escHtml(clientId)}" style="width:100%;margin-bottom:8px">
-    <button class="btn btn-amb btn-sm" style="width:100%" onclick="saveGoogleClientId()">Save Client ID</button>
-    <div id="gci-conf" class="confbox">Client ID saved &#x2713;</div>
-  </div>`;
-
-  html+=`<div class="card" style="margin-bottom:12px">
     <div class="cl">Your bio</div>
-    <div class="ct" style="margin-bottom:4px">Stable profile fields</div>
-    <div class="cs" style="margin-bottom:12px">Height and goals live here. Current weight / body fat come from Progress logs (any day) \u2014 nothing is fixed forever.</div>
+    <div class="ct" style="margin-bottom:4px">Personal profile</div>
+    <div class="cs" style="margin-bottom:12px">Update weight and body fat any day. Height and goals stay here; nothing is locked forever.</div>
     ${body.available?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
       <div style="background:var(--c2);border:1px solid var(--c3);border-radius:12px;padding:10px;text-align:center;flex:1;min-width:70px"><div style="font-size:18px;font-weight:800;font-family:'Barlow',sans-serif;color:var(--cyan)">${body.weightKg}kg</div><div style="font-size:10px;color:var(--mut);margin-top:2px;font-weight:600">Latest weight</div></div>
       <div style="background:var(--c2);border:1px solid var(--c3);border-radius:12px;padding:10px;text-align:center;flex:1;min-width:70px"><div style="font-size:18px;font-weight:800;font-family:'Barlow',sans-serif;color:var(--cyan)">${body.bodyFatPct!=null?body.bodyFatPct+'%':'—'}</div><div style="font-size:10px;color:var(--mut);margin-top:2px;font-weight:600">Latest BF</div></div>
     </div>
-    <div style="font-size:11px;color:var(--dim);margin-bottom:10px">From ${escHtml(body.source)} · update anytime in Progress</div>`:`<div class="nt na" style="margin-bottom:12px">No weight logged yet \u2014 open Progress and save body stats for any date.</div>`}
+    <div style="font-size:11px;color:var(--dim);margin-bottom:10px">From ${escHtml(body.source)}</div>`:`<div class="nt na" style="margin-bottom:12px">No weight logged yet \u2014 add it below.</div>`}
+    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:140px;font-weight:500">Log date</div>
+      <input class="sinput" type="date" id="pb_date" max="${todayKey()}" value="${todayKey()}" style="width:150px;text-align:center"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:140px;font-weight:500">Weight (kg)</div>
+      <input class="sinput" type="number" inputmode="decimal" id="pb_wt" step="0.1" placeholder="e.g. 71" style="width:90px;text-align:center"></div>
+    <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:140px;font-weight:500">Body fat (%)</div>
+      <input class="sinput" type="number" inputmode="decimal" id="pb_bf" step="0.1" placeholder="e.g. 20" style="width:90px;text-align:center"></div>
+    <button class="btn btn-amb btn-sm" style="width:100%;margin-top:4px" onclick="saveProfileBodyStats()">Save weight / BF</button>
+    <div id="pb-conf" class="confbox">Body stats saved &#x2713;</div>
+    <div class="sep"></div>
     <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:140px;font-weight:500">Height (cm)</div>
       <input class="sinput" type="number" inputmode="decimal" id="bio-height" step="0.1" value="${prof.heightCm??''}" placeholder="175" style="width:90px;text-align:center"></div>
     <div class="statrow"><div style="font-size:13px;color:var(--mut);min-width:140px;font-weight:500">Goal weight (kg)</div>
@@ -2786,6 +2775,8 @@ function renderProfile(){
     <div id="bio-conf" class="confbox">Bio saved &#x2713;</div>
   </div>`;
 
+  html+=renderProfileBodyCharts();
+
   html+=`<div class="card" style="margin-bottom:12px">
     <div class="cl">Daily targets</div>
     <div class="ct" style="margin-bottom:8px">Used on the Food tab</div>
@@ -2797,7 +2788,6 @@ function renderProfile(){
   </div>`;
 
   document.getElementById('p2').innerHTML=html;
-  setTimeout(initGoogleSignIn,30);
 }
 
 /* ===== FOOD ===== */
@@ -3978,23 +3968,21 @@ if(!Data.session.get(activeDateKey())){
 }
 function updateHeaderSub(){
   const body=getBodyForCalcs();
-  const auth=getAuth();
-  const who=auth?.name?auth.name.split(' ')[0]+' \u00b7 ':'';
   const bio=body.available
     ?`${body.weightKg}kg${body.bodyFatPct!=null?' \u00b7 '+body.bodyFatPct+'% BF':''}`
-    :'add body stats in Progress';
+    :'add body stats in Profile';
   const el=document.getElementById('hsub');
-  if(el)el.textContent=new Date().toLocaleDateString('en-GB',{weekday:'long'})+' \u00b7 '+who+'Recomp ('+bio+')';
+  if(el)el.textContent=new Date().toLocaleDateString('en-GB',{weekday:'long'})+' \u00b7 Recomp ('+bio+')';
 }
 document.getElementById('hsub').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long'})+' \u00b7 Recomp: set your bio in Profile / Progress';
 if(navigator.storage&&navigator.storage.persist){
   (async()=>{try{const granted=await navigator.storage.persist();lsS('storage_persisted',granted);}catch{lsS('storage_persisted',false);}})();
 }
+clearLegacyAuth();
 updateHeader();
 updateHeaderSub();
 renderToday();
 renderRecipes();
-window.addEventListener('load',()=>setTimeout(initGoogleSignIn,300));
 </script>
 </body>
 </html>
