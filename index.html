@@ -790,6 +790,24 @@ function mountMiniExerciseDiagram(orig){
   _miniExCharts=mountBodyDiagram('miniex-front','miniex-back',state,()=>{},_miniExCharts);
 }
 
+let _addExCharts={front:null,back:null};
+function mountAddExerciseDiagram(orig){
+  const state={};
+  (orig.primaryMuscles||[]).forEach(tag=>{
+    (MUSCLE_TAG_TO_LIB_IDS[tag]||[]).forEach(id=>{state[id]={intensity:8,selected:true};});
+  });
+  (orig.secondaryMuscles||[]).forEach(tag=>{
+    (MUSCLE_TAG_TO_LIB_IDS[tag]||[]).forEach(id=>{if(!state[id])state[id]={intensity:3,selected:false};});
+  });
+  _addExCharts=mountBodyDiagram('miniex-front','miniex-back',state,(id)=>{
+    const resolved=resolveClickedTagsAll(id);
+    if(!resolved.length) return;
+    const mode = (window._addExModePrimary===undefined)?true:!!window._addExModePrimary;
+    resolved.forEach(tag=>toggleMuscleTag(tag, mode));
+    renderExercisePreview();
+  },_addExCharts);
+}
+
 /* ===== DATA LAYER (first slice \u2014 PR/session/draft access only, existing call sites not yet migrated) =====
    This exists so the next migration pass has a single, tested, correct place to point every
    old lsG/lsS call at, instead of each call site inventing its own key-naming convention.
@@ -4297,14 +4315,14 @@ function toggleMuscleTag(tag,primary){
     if(selS.has(tag)){ selS.delete(tag); if(sbtn) sbtn.classList.remove('dbtn.dk'); }
     else { selS.add(tag); if(sbtn) sbtn.classList.add('dbtn.dk'); }
   }
-  mountMiniExerciseDiagram({primaryMuscles:[...selP], secondaryMuscles:[...selS]});
+  mountAddExerciseDiagram({primaryMuscles:[...selP], secondaryMuscles:[...selS]});
 }
 
 function renderExercisePreview(){
   const name = (document.getElementById('add-ex-name')?.value||'').trim();
   const primary = window._addExPrimary? [...window._addExPrimary]: [];
   const secondary = window._addExSecondary? [...window._addExSecondary]: [];
-  mountMiniExerciseDiagram({primaryMuscles:primary, secondaryMuscles:secondary});
+  mountAddExerciseDiagram({primaryMuscles:primary, secondaryMuscles:secondary});
 }
 
 function saveExerciseDef(){
