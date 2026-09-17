@@ -240,11 +240,12 @@ textarea.genin{resize:none}
 </div>
 <div class="tabs">
   <button class="tab on" data-t="0">Today</button>
-  <button class="tab" data-t="1">Progress</button>
-  <button class="tab" data-t="2">Profile</button>
-  <button class="tab" data-t="3">Food</button>
-  <button class="tab" data-t="4">History</button>
-  <button class="tab" data-t="5">Recipes</button>
+  <button class="tab" data-t="1">Cardio</button>
+  <button class="tab" data-t="2">New</button>
+  <button class="tab" data-t="3">Progress</button>
+  <button class="tab" data-t="4">Profile</button>
+  <button class="tab" data-t="5">Food</button>
+  <button class="tab" data-t="6">History</button>
 </div>
 <div class="pnl on" id="p0"></div>
 <div class="pnl" id="p1"></div>
@@ -252,6 +253,7 @@ textarea.genin{resize:none}
 <div class="pnl" id="p3"></div>
 <div class="pnl" id="p4"></div>
 <div class="pnl" id="p5"></div>
+<div class="pnl" id="p6"></div>
 <div class="sticky-wrap" id="sticky-wrap">
   <button class="sticky-save" id="sticky-btn">Log today’s workout</button>
 </div>
@@ -374,6 +376,12 @@ function findExDef(name){
     if(e.n===name)return e;
     if(e.inputType==='choice'&&e.choiceOptions){const o=e.choiceOptions.find(o=>o.name===name);if(o)return{...e,...o};}
   }}
+  // Check custom exercises saved locally
+  try{
+    const customs = lsG('custom_exs') || [];
+    const c = customs.find(x => x.n === name);
+    if(c) return {...c, s:c.s||3, r:c.r||'10–12', inputType:c.inputType||'weight', wlabel:c.wlabel||'kg'};
+  }catch(e){}
   for(const origName in SUBS){
     if(SUBS[origName].includes(name)){
       const origDef=[...DAYS.flatMap(d=>d.ex),...CARDIO_DAY_EX].find(x=>x.n===origName);
@@ -1917,12 +1925,52 @@ function renderToday(){
       </div>
     </div>`;
   }else{
-    html+=`<div class="card warm" style="margin-bottom:10px">
+  const sleep = lsG('sleep:'+dk)||null;
+  html+=`<div class="card warm" style="margin-bottom:10px">
       <div class="cl">Quick check</div><div class="ct" style="margin-bottom:12px">How’s your energy today?</div>
-      <div style="display:flex;gap:5px">${[1,2,3,4,5].map(n=>{const c=n>=4?'var(--grn)':n===3?'var(--amb)':'var(--red)';const bg=n>=4?'var(--gbg)':n===3?'var(--abg)':'var(--rbg)';return`<button class="sym-val-btn" onclick="logSym('energy',${n})" style="background:var(--c2);color:var(--mut);border-color:var(--c3)">${n}</button>`;}).join('')}</div>
+      <div style="display:flex;gap:5px">${[1,2,3,4,5].map(n=>{const c=n>=4?'var(--grn)':n===3?'var(--amb)':'var(--red)';return`<button class="sym-val-btn" onclick="logSym('energy',${n})" style="background:var(--c2);color:var(--mut);border-color:var(--c3)">${n}</button>`;}).join('')}</div>
       <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-top:3px"><span>Wrecked</span><span>Full power</span></div>
+      <div class="sep" style="margin-top:10px;margin-bottom:8px"></div>
+      <div style="font-size:12px;color:var(--mut);margin-bottom:8px;font-weight:700;letter-spacing:0.04em">Sleep (from watch)</div>
+      ${sleep?`<div style="display:flex;gap:8px;margin-bottom:8px">
+          <div style="flex:1;background:var(--c2);border:1px solid var(--c3);border-radius:10px;padding:10px;text-align:center">
+            <div style="font-size:18px;font-weight:800;color:var(--txt)">${sleep.hours!=null?sleep.hours+'h':'—'}</div><div style="font-size:11px;color:var(--mut);margin-top:4px">Hours</div>
+          </div>
+          <div style="flex:1;background:var(--c2);border:1px solid var(--c3);border-radius:10px;padding:10px;text-align:center">
+            <div style="font-size:18px;font-weight:800;color:var(--txt)">${sleep.score!=null?sleep.score:'—'}</div><div style="font-size:11px;color:var(--mut);margin-top:4px">Score</div>
+          </div>
+          <div style="flex:1;background:var(--c2);border:1px solid var(--c3);border-radius:10px;padding:10px;text-align:center">
+            <div style="font-size:18px;font-weight:800;color:var(--txt)">${sleep.eff!=null?sleep.eff+'%':'—'}</div><div style="font-size:11px;color:var(--mut);margin-top:4px">Efficiency</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" style="flex:1" onclick="document.getElementById('sleep-hours').value='${sleep.hours??''}';document.getElementById('sleep-score').value='${sleep.score??''}';document.getElementById('sleep-eff').value='${sleep.eff??''}';document.getElementById('sleep-form').scrollIntoView({behavior:'smooth'})">Edit sleep</button>
+          <button class="btn btn-ghost btn-sm" style="flex:1;color:var(--red);border-color:var(--rbr)" onclick="deleteSleep()">Delete sleep</button>
+        </div>`:`
+        <div id="sleep-form" style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+          <div style="display:flex;gap:8px">
+            <input class="sinput" id="sleep-hours" type="number" inputmode="decimal" placeholder="Hours (e.g. 7.5)" step="0.1" style="flex:1">
+            <input class="sinput" id="sleep-score" type="number" inputmode="numeric" placeholder="Score (0-100)" step="1" style="flex:1">
+            <input class="sinput" id="sleep-eff" type="number" inputmode="decimal" placeholder="Eff % (e.g. 85)" step="0.1" style="flex:1">
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-amb btn-sm" style="flex:1" onclick="saveSleep()">Save sleep</button>
+            <button class="btn btn-ghost btn-sm" style="flex:1" onclick=\"document.getElementById('sleep-hours').value='';document.getElementById('sleep-score').value='';document.getElementById('sleep-eff').value='';\">Clear</button>
+          </div>
+          <div id="sleep-conf" class="confbox">Sleep saved &#x2713;</div>
+        </div>`}
     </div>`;
   }
+  // Quick custom log prompt (after quick check)
+  html+=`<div class="card" style="margin-bottom:10px">
+    <div class="cl">Quick log</div>
+    <div class="ct" style="margin-bottom:8px">How many exercises did you do today?</div>
+    <div style="display:flex;gap:8px">
+      <input class="sinput" id="quick-log-count" type="number" min="1" max="20" value="5" style="width:120px">
+      <button class="btn btn-amb btn-sm" onclick="startCustomLogFromToday()">Start log</button>
+      <button class="btn btn-ghost btn-sm" onclick="document.querySelector('.tab[data-t=2]')?.click()">Open New</button>
+    </div>
+  </div>`;
 
   /* -- Skip warnings -- */
   const warnings=getSkipWarnings();
@@ -2261,6 +2309,13 @@ function getFreeSessionExerciseList(){
       if(def)list.push(def);
     }
   }
+  // Include any custom exercises created by the user
+  try{
+    const customs = lsG('custom_exs')||[];
+    for(const c of customs){
+      if(!seen.has(c.n)){seen.add(c.n);list.push({...c});}
+    }
+  }catch(e){}
   return list.sort((a,b)=>a.n.localeCompare(b.n));
 }
 function addToFreeSession(name){
@@ -2686,6 +2741,28 @@ function saveMeasurements(){
   if(!entry.waist&&!entry.chest)return;
   const all=lsG('measurements')||[];all.push(entry);lsS('measurements',all.slice(-260));
   const c=document.getElementById('mconf');if(c){c.style.display='block';setTimeout(()=>{c.style.display='none';renderProgress();},2000);}
+}
+
+/* ===== SLEEP LOG (quick check) ===== */
+function saveSleep(){
+  const dk=activeDateKey();
+  const hrs=document.getElementById('sleep-hours')?.value;
+  const score=document.getElementById('sleep-score')?.value;
+  const eff=document.getElementById('sleep-eff')?.value;
+  const entry={date:dk};
+  if(hrs!==''&&hrs!=null)entry.hours=parseFloat(hrs);
+  if(score!==''&&score!=null)entry.score=parseFloat(score);
+  if(eff!==''&&eff!=null)entry.eff=parseFloat(eff);
+  if(entry.hours==null&&entry.score==null&&entry.eff==null){alert('Enter at least one sleep value.');return;}
+  lsS('sleep:'+dk,entry);
+  const c=document.getElementById('sleep-conf');if(c){c.style.display='block';setTimeout(()=>c.style.display='none',1200);}
+  renderToday();
+}
+function deleteSleep(){
+  const dk=activeDateKey();
+  if(!confirm('Delete sleep entry for '+dk+'?'))return;
+  lsDel('sleep:'+dk);
+  renderToday();
 }
 
 /* ===== PROFILE TAB ===== */
@@ -3950,11 +4027,12 @@ document.querySelectorAll('.tab').forEach(btn=>{
     document.querySelectorAll('.pnl').forEach((p,i)=>p.classList.toggle('on',i===t));
     stopTimerTick();
     if(t===0){renderToday();}else{showStickyBtn(false);}
-    if(t===1)renderProgress();
-    if(t===2)renderProfile();
-    if(t===3)renderFood();
-    if(t===4)renderHistory();
-    if(t===5)renderRecipes();
+    if(t===1)renderCardioTab();
+    if(t===2)renderNewTab();
+    if(t===3)renderProgress();
+    if(t===4)renderProfile();
+    if(t===5)renderFood();
+    if(t===6)renderHistory();
   });
 });
 
@@ -4022,6 +4100,199 @@ updateHeader();
 updateHeaderSub();
 renderToday();
 renderRecipes();
+// New tab renderers and helpers
+function findCardioDay(){const gd=DAYS.find(d=>d.label&&d.label.toLowerCase().includes('cardio'));return gd||{label:'Cardio + core',focus:'Cardio & core',time:''};}
+function renderCardioTab(){document.getElementById('p1').innerHTML=renderCardioDaySection(findCardioDay(),SEQ.indexOf(findCardioDay()?.label)||3);}
+
+function collectExercisesByType(){
+  const map={Push:[],Pull:[],Legs:[],Core:[]};
+  try{
+    for(const d of DAYS){
+      const key=(d.label||'').toLowerCase();
+      let t=null;
+      if(key.includes('push'))t='Push';
+      if(key.includes('pull'))t='Pull';
+      if(key.includes('leg'))t='Legs';
+      if(key.includes('core'))t='Core';
+      if(t){
+        (d.ex||[]).forEach(e=>{
+          const name=e.n||e;
+          if(!map[t].includes(name))map[t].push(name);
+          if(e.choiceOptions) e.choiceOptions.forEach(o=>{ if(!map[t].includes(o.name)) map[t].push(o.name);});
+        });
+      }
+    }
+  }catch(e){}
+  return map;
+}
+
+function renderNewTab(){
+  const map=collectExercisesByType();
+  const types=Object.keys(map);
+  let html=`<div class="card"><div class="cl">Add new session</div><div class="ct" style="margin-bottom:8px">Create a quick custom session by number of exercises</div>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <input class="sinput" id="new-ex-count" type="number" min="1" max="20" value="5" style="width:120px" placeholder="Exercises">
+      <button class="btn btn-amb btn-sm" onclick="startCustomLog()">Start custom log</button>
+    </div>
+    <div id="new-ex-list"></div>
+  </div>`;
+  // Add exercise definition panel
+  html += `<div class="card" style="margin-top:12px"><div class="cl">Add exercise</div><div class="ct" style="margin-bottom:8px">Define a new exercise and tag primary/secondary muscles</div>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <input class="sinput" id="add-ex-name" type="text" placeholder="Exercise name (e.g. Seated cable row)" style="flex:1" oninput="renderExercisePreview()">
+      <button class="btn btn-amb btn-sm" onclick="renderExercisePreview()">Preview</button>
+    </div>
+    <div style="display:flex;gap:12px">
+      <div style="flex:1">
+        <div style="font-size:12px;color:var(--mut);margin-bottom:6px;font-weight:700">Tap muscle groups to tag (primary)</div>
+        <div id="add-ex-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
+        <div style="font-size:12px;color:var(--mut);margin-bottom:6px;font-weight:700">Secondary muscles (optional)</div>
+        <div id="add-ex-tags-sec" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
+      </div>
+      <div style="width:46%">
+        <div id="miniex-front" style="width:100%;height:140px"></div>
+        <div id="miniex-back" style="width:100%;height:140px;margin-top:8px"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-grn" onclick="saveExerciseDef()" style="flex:1">Save exercise</button>
+      <button class="btn btn-ghost" onclick="renderNewTab()" style="flex:1">Cancel</button>
+    </div>
+    <div id="add-ex-conf" class="confbox">Exercise saved &#x2713;</div>
+  </div>`;
+  document.getElementById('p2').innerHTML=html;
+  window._newExMap = map; // cache for selects
+  renderExerciseTags();
+}
+
+function startCustomLog(){
+  const n=parseInt(document.getElementById('new-ex-count')?.value||0);
+  if(!n||n<1){alert('Enter number of exercises');return;}
+  const map=window._newExMap||collectExercisesByType();
+  const types=Object.keys(map);
+  let html='';
+  for(let i=0;i<n;i++){
+    html+=`<div class="card" style="margin-bottom:8px" id="new-ex-${i}">
+      <div style="display:flex;gap:8px;align-items:center">
+        <select class="foodsel" id="new-ex-type-${i}" onchange="populateNewExOptions(${i})">${types.map(t=>`<option value="${t}">${t}</option>`).join('')}</select>
+        <select class="foodsel" id="new-ex-name-${i}"></select>
+        <div style="display:flex;gap:6px">
+          <input class="sinput" id="new-ex-w-${i}" placeholder="kg" style="width:70px">
+          <input class="sinput" id="new-ex-r-${i}" placeholder="reps" style="width:70px">
+        </div>
+      </div>
+      <div id="new-ex-sets-${i}" style="margin-top:8px"></div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-ghost btn-sm" onclick="addSetToNew(${i})">+ Set</button>
+        <button class="btn btn-ghost btn-sm" onclick="addDropSetToNew(${i})">+ Drop set</button>
+      </div>
+    </div>`;
+  }
+  html += `<div style="display:flex;gap:8px"><button class="btn btn-grn" onclick="saveCustomSession(${n})" style="flex:1">Save session</button><button class="btn btn-ghost" onclick="renderNewTab()" style="flex:1">Cancel</button></div>`;
+  document.getElementById('new-ex-list').innerHTML=html;
+  for(let i=0;i<n;i++)populateNewExOptions(i);
+}
+
+function populateNewExOptions(i){
+  const type=document.getElementById('new-ex-type-'+i).value;
+  const sel=document.getElementById('new-ex-name-'+i);
+  const opts=(window._newExMap&&window._newExMap[type])||[];
+  sel.innerHTML=opts.map(o=>`<option value="${o}">${o}</option>`).join('')||'<option value="">No exercises</option>';
+}
+
+function renderExerciseTags(){
+  const tags = Object.keys(MUSCLE_TAG_TO_LIB_IDS||{}).sort();
+  const container = document.getElementById('add-ex-tags');
+  const containerSec = document.getElementById('add-ex-tags-sec');
+  if(!container) return;
+  container.innerHTML = tags.map(t=>`<button class="subbtn" onclick="toggleMuscleTag('${t}',true)" id="tagp-${t.replace(/\\s+/g,'_')}">${t}</button>`).join('');
+  containerSec.innerHTML = tags.map(t=>`<button class="subbtn" onclick="toggleMuscleTag('${t}',false)" id="tags-${t.replace(/\\s+/g,'_')}">${t}</button>`).join('');
+}
+
+function toggleMuscleTag(tag,primary){
+  const pbtn = document.getElementById('tagp-'+tag.replace(/\\s+/g,'_'));
+  const sbtn = document.getElementById('tags-'+tag.replace(/\\s+/g,'_'));
+  const selP = window._addExPrimary = window._addExPrimary||new Set();
+  const selS = window._addExSecondary = window._addExSecondary||new Set();
+  if(primary){
+    if(selP.has(tag)){ selP.delete(tag); if(pbtn) pbtn.classList.remove('dbtn.dk'); }
+    else { selP.add(tag); if(pbtn) pbtn.classList.add('dbtn.dk'); }
+  } else {
+    if(selS.has(tag)){ selS.delete(tag); if(sbtn) sbtn.classList.remove('dbtn.dk'); }
+    else { selS.add(tag); if(sbtn) sbtn.classList.add('dbtn.dk'); }
+  }
+  mountMiniExerciseDiagram({primaryMuscles:[...selP], secondaryMuscles:[...selS]});
+}
+
+function renderExercisePreview(){
+  const name = (document.getElementById('add-ex-name')?.value||'').trim();
+  const primary = window._addExPrimary? [...window._addExPrimary]: [];
+  const secondary = window._addExSecondary? [...window._addExSecondary]: [];
+  mountMiniExerciseDiagram({primaryMuscles:primary, secondaryMuscles:secondary});
+}
+
+function saveExerciseDef(){
+  const name = (document.getElementById('add-ex-name')?.value||'').trim();
+  if(!name){alert('Enter an exercise name');return;}
+  const primary = window._addExPrimary? [...window._addExPrimary]: [];
+  const secondary = window._addExSecondary? [...window._addExSecondary]: [];
+  const customs = lsG('custom_exs')||[];
+  const existingIdx = customs.findIndex(c=>c.n===name);
+  const def = {n:name, primaryMuscles:primary, secondaryMuscles:secondary, s:3, r:'10–12', inputType:'weight'};
+  if(existingIdx>=0) customs[existingIdx]=def; else customs.push(def);
+  lsS('custom_exs',customs);
+  const c=document.getElementById('add-ex-conf'); if(c){ c.style.display='block'; setTimeout(()=>c.style.display='none',1400); }
+  renderNewTab();
+}
+
+function addSetToNew(i){
+  const el=document.getElementById('new-ex-sets-'+i);
+  const id=Date.now()+Math.random().toString(36).slice(2,7);
+  const row=document.createElement('div');
+  row.style.display='flex';row.style.gap='8px';row.style.marginTop='6px';
+  row.innerHTML=`<input class="sinput" placeholder="kg" style="width:70px"><input class="sinput" placeholder="reps" style="width:70px"><button class="btn btn-ghost btn-sm" onclick="this.parentNode.remove()">Remove</button>`;
+  el.appendChild(row);
+}
+
+function addDropSetToNew(i){
+  addSetToNew(i); // mark not distinguished for now
+}
+
+function saveCustomSession(n){
+  const dk=activeDateKey();
+  const exercises=[];
+  for(let i=0;i<n;i++){
+    const name=document.getElementById('new-ex-name-'+i)?.value||'';
+    const sets=[];
+    const w=document.getElementById('new-ex-w-'+i)?.value;
+    const r=document.getElementById('new-ex-r-'+i)?.value;
+    if(w||r)sets.push({w:w||'',r:r||'',done:false,isDrop:false});
+    const extra=document.getElementById('new-ex-sets-'+i);
+    if(extra)for(const child of extra.children){
+      const inputs=child.querySelectorAll('input');
+      if(inputs.length>=2)sets.push({w:inputs[0].value||'',r:inputs[1].value||'',done:false,isDrop:false});
+    }
+    if(!name)continue;
+    exercises.push({name,origName:name,chosenType:null,sets,exVolume:0});
+  }
+  if(!exercises.length){alert('No exercises entered');return;}
+  const session={date:dk,dl:'Custom session',seqIdx:null,exercises,note:'',painNote:'',skipped:false,duration:null,newPRs:[],totalVolume:0,cardio:false};
+  Data.session.set(session,dk);
+  Data.session.setLast(session.dl,{date:dk,exercises});
+  const mk=monthKeyFor(dk);const mlog=lsG('mlog:'+mk)||{};mlog[dk]={type:'done',dl:session.dl,seqIdx:session.seqIdx};lsS('mlog:'+mk,mlog);
+  clearDraft();showStickyBtn(false);stopTimerTick();
+  renderToday();
+  alert('Custom session saved');
+}
+
+function startCustomLogFromToday(){
+  const n=parseInt(document.getElementById('quick-log-count')?.value||0);
+  if(!n||n<1){alert('Enter number of exercises');return;}
+  // switch to New tab then start
+  const tab = document.querySelector('.tab[data-t=\"2\"]');
+  if(tab && tab.click) tab.click();
+  setTimeout(()=>{ const inp=document.getElementById('new-ex-count'); if(inp){ inp.value=n; startCustomLog(); }},120);
+}
 </script>
 </body>
 </html>
