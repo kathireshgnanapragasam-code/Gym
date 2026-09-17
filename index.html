@@ -242,10 +242,11 @@ textarea.genin{resize:none}
   <button class="tab on" data-t="0">Today</button>
   <button class="tab" data-t="1">Cardio</button>
   <button class="tab" data-t="2">New</button>
-  <button class="tab" data-t="3">Progress</button>
-  <button class="tab" data-t="4">Profile</button>
-  <button class="tab" data-t="5">Food</button>
-  <button class="tab" data-t="6">History</button>
+  <button class="tab" data-t="3">Sleep</button>
+  <button class="tab" data-t="4">Progress</button>
+  <button class="tab" data-t="5">Profile</button>
+  <button class="tab" data-t="6">Food</button>
+  <button class="tab" data-t="7">History</button>
 </div>
 <div class="pnl on" id="p0"></div>
 <div class="pnl" id="p1"></div>
@@ -254,6 +255,7 @@ textarea.genin{resize:none}
 <div class="pnl" id="p4"></div>
 <div class="pnl" id="p5"></div>
 <div class="pnl" id="p6"></div>
+<div class="pnl" id="p7"></div>
 <div class="sticky-wrap" id="sticky-wrap">
   <button class="sticky-save" id="sticky-btn">Log today’s workout</button>
 </div>
@@ -3967,7 +3969,7 @@ function renderRecipes(){
         <button onclick="deleteRecipeFood(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:22px;padding:6px;min-width:44px;min-height:44px">&times;</button>
       </div>
       ${f.photo?`<img src="${f.photo}" alt="" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;margin-top:8px;border:1px solid var(--c3)">`:''}
-      <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="quickLog('${f.name.replace(/'/g,"\\'")}');document.querySelector('.tab[data-t=\"3\"]').click()">+ Log now</button>
+      <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="quickLog('${f.name.replace(/'/g,"\\'")}');document.querySelector('.tab[data-t=\"6\"]')?.click()">+ Log now</button>
     </div>`).join(''):`<div style="font-size:13px;color:var(--dim);padding:8px 0">No saved recipes yet — snap a HelloFresh pack or supplement label above.</div>`;
 
   document.getElementById('p5').innerHTML=`
@@ -4029,10 +4031,11 @@ document.querySelectorAll('.tab').forEach(btn=>{
     if(t===0){renderToday();}else{showStickyBtn(false);}
     if(t===1)renderCardioTab();
     if(t===2)renderNewTab();
-    if(t===3)renderProgress();
-    if(t===4)renderProfile();
-    if(t===5)renderFood();
-    if(t===6)renderHistory();
+    if(t===3)renderSleepTab();
+    if(t===4)renderProgress();
+    if(t===5)renderProfile();
+    if(t===6)renderFood();
+    if(t===7)renderHistory();
   });
 });
 
@@ -4163,6 +4166,77 @@ function renderNewTab(){
   document.getElementById('p2').innerHTML=html;
   window._newExMap = map; // cache for selects
   renderExerciseTags();
+  // render saved templates
+  const templates = lsG('custom_routines')||[];
+  if(templates.length){
+    const tplHtml = templates.map(t=>`<div style="display:flex;align-items:center;gap:8px;margin-top:8px;padding:8px;border:1px solid var(--c3);border-radius:10px"><div style="flex:1"><div style="font-weight:800">${escHtml(t.name)}</div><div style="font-size:12px;color:var(--mut)">${t.exercises.length} exercises · ${t.created}</div></div><div style="display:flex;gap:6px"><button class="btn btn-ghost btn-sm" onclick="loadTemplate('${escHtml(t.name).replace(/'/g,\"\\\\'\")}')">Load</button><button class="btn btn-ghost btn-sm" onclick="deleteTemplate('${escHtml(t.name).replace(/'/g,\"\\\\'\")}')">Delete</button></div></div>`).join('');
+    const container = document.getElementById('p2');
+    container.insertAdjacentHTML('beforeend', `<div class="card" style="margin-top:12px"><div class="cl">Saved templates</div>${tplHtml}</div>`);
+  }
+}
+
+/* ===== SLEEP TAB ===== */
+let _sleepChartState={hours:'week',score:'week',eff:'week'};
+function getSleepMetricHistory(metric){
+  const results=[];
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(!k||!k.startsWith('sleep:'))continue;
+    const s=lsG(k);
+    if(!s)continue;
+    const v = metric==='hours'?s.hours:(metric==='score'?s.score:s.eff);
+    if(v!=null&&!Number.isNaN(parseFloat(v)))results.push({date:s.date,avg:parseFloat(v)});
+  }
+  return results.sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+}
+
+function buildSleepChartInner(metric){
+  const range=_sleepChartState[metric]||'week';
+  const hist=getSleepMetricHistory(metric);
+  const unit = metric==='hours'?'h':(metric==='eff'?'%':'score');
+  const label = metric==='hours'?'Sleep hours':(metric==='eff'?'Sleep efficiency':'Sleep score');
+  const asHist=hist.map(h=>({date:h.date,avg:h.avg,unit,metric:label,isPR:false}));
+  const agg=aggregateLiftHistory(asHist,range);
+  if(agg.points.length<2){
+    return `<div style="color:var(--dim);font-size:13px;padding:20px;text-align:center">${hist.length?`Need at least 2 ${range==='month'?'months':(range==='day'?'days':'weeks')} of ${label.toLowerCase()} logs`:`Log ${label.toLowerCase()} at least twice to see a trend`}</div>
+      <div class="lift-chart-meta">${hist.length} log${hist.length===1?'':'s'} · ${range} view</div>`;
+  }
+  const last=agg.points[agg.points.length-1], first=agg.points[0];
+  const delta=Math.round((last.y-first.y)*10)/10;
+  return `<div class="chart-wrap"><div class="chart-label">${label} (${unit})</div>${buildSVG(agg.points,'var(--cyan)',unit)}</div>
+    <div class="lift-chart-meta">Latest ${last.y}${unit} · change ${delta>0?'+':''}${delta}${unit} · ${hist.length} logs · by ${range}</div>`;
+}
+
+function refreshSleepChart(metric){
+  const el=document.getElementById('sleep-chart-'+metric); if(!el) return;
+  el.innerHTML=buildSleepChartInner(metric);
+}
+function onSleepChartRangeChange(metric,v){ _sleepChartState[metric]=v; refreshSleepChart(metric); }
+
+function renderSleepTab(){
+  const dk=activeDateKey();
+  const s=lsG('sleep:'+dk)||{};
+  let html=`<div class="card"><div class="cl">Sleep</div><div class="ct" style="margin-bottom:8px">Log sleep for ${dk}</div>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <input class="sinput" id="sleep-tab-hours" placeholder="Hours" value="${s.hours??''}" style="width:120px">
+      <input class="sinput" id="sleep-tab-score" placeholder="Score" value="${s.score??''}" style="width:120px">
+      <input class="sinput" id="sleep-tab-eff" placeholder="Efficiency %" value="${s.eff??''}" style="width:120px">
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-amb" onclick="lsS('sleep:'+activeDateKey(),{date:activeDateKey(),hours:parseFloat(document.getElementById('sleep-tab-hours')?.value||'')||null,score:parseFloat(document.getElementById('sleep-tab-score')?.value||'')||null,eff:parseFloat(document.getElementById('sleep-tab-eff')?.value||'')||null});renderSleepTab();">Save</button>
+      <button class="btn btn-ghost" onclick="lsDel('sleep:'+activeDateKey());renderSleepTab();">Delete</button>
+    </div>
+  </div>
+  <div class="card"><div class="cl">Sleep charts</div><div class="ct" style="margin-bottom:8px">Select range to view</div>`;
+  const metrics=['hours','score','eff'];
+  metrics.forEach(m=>{
+    html+=`<div style="margin-bottom:12px">
+      <div class="lift-chart-row"><select class="foodsel" onchange="onSleepChartRangeChange('${m}',this.value)"><option value="day"${_sleepChartState[m]==='day'?' selected':''}>By day</option><option value="week"${_sleepChartState[m]==='week'?' selected':''}>By week</option><option value="month"${_sleepChartState[m]==='month'?' selected':''}>By month</option></select></div>
+      <div id="sleep-chart-${m}">${buildSleepChartInner(m)}</div>
+    </div>`;
+  });
+  html+='</div>';
+  document.getElementById('p3').innerHTML=html;
 }
 
 function startCustomLog(){
@@ -4191,6 +4265,8 @@ function startCustomLog(){
   html += `<div style="display:flex;gap:8px"><button class="btn btn-grn" onclick="saveCustomSession(${n})" style="flex:1">Save session</button><button class="btn btn-ghost" onclick="renderNewTab()" style="flex:1">Cancel</button></div>`;
   document.getElementById('new-ex-list').innerHTML=html;
   for(let i=0;i<n;i++)populateNewExOptions(i);
+  // If a template was requested to load, prefill fields
+  if(window._templateToLoad){\n+    const tpl=window._templateToLoad; window._templateToLoad=null;\n+    tpl.exercises.forEach((ex,idx)=>{\n+      const nameEl=document.getElementById('new-ex-name-'+idx);\n+      if(nameEl) nameEl.value = ex.name || ex.origName || '';\n+      const wEl=document.getElementById('new-ex-w-'+idx);\n+      const rEl=document.getElementById('new-ex-r-'+idx);\n+      if(wEl && ex.sets && ex.sets[0]) wEl.value = ex.sets[0].w||'';\n+      if(rEl && ex.sets && ex.sets[0]) rEl.value = ex.sets[0].r||'';\n+      const setsContainer=document.getElementById('new-ex-sets-'+idx);\n+      if(setsContainer && ex.sets && ex.sets.length>1){\n+        for(let si=1; si<ex.sets.length; si++){\n+          const s=ex.sets[si]; const row=document.createElement('div'); row.style.display='flex'; row.style.gap='8px'; row.style.marginTop='6px'; row.innerHTML=`<input class=\"sinput\" placeholder=\"kg\" style=\"width:70px\" value=\"${s.w||''}\"><input class=\"sinput\" placeholder=\"reps\" style=\"width:70px\" value=\"${s.r||''}\"><button class=\"btn btn-ghost btn-sm\" onclick=\"this.parentNode.remove()\">Remove</button>`; setsContainer.appendChild(row);\n+        }\n+      }\n+    });\n+  }\n }
 }
 
 function populateNewExOptions(i){
@@ -4282,7 +4358,8 @@ function saveCustomSession(n){
   const mk=monthKeyFor(dk);const mlog=lsG('mlog:'+mk)||{};mlog[dk]={type:'done',dl:session.dl,seqIdx:session.seqIdx};lsS('mlog:'+mk,mlog);
   clearDraft();showStickyBtn(false);stopTimerTick();
   renderToday();
-  alert('Custom session saved');
+  // offer to save as reusable template
+  if(confirm('Save this session as a reusable template?')){\n+    const name=prompt('Template name (unique):');\n+    if(name&&name.trim()){const r=lsG('custom_routines')||[];const tpl={name:name.trim(),created:todayKey(),exercises};const idx=r.findIndex(x=>x.name===tpl.name);if(idx>=0)r[idx]=tpl;else r.push(tpl);lsS('custom_routines',r);alert('Template saved: '+tpl.name);}else{alert('Template not saved.');}\n+  }\n+  alert('Custom session saved');
 }
 
 function startCustomLogFromToday(){
@@ -4292,6 +4369,20 @@ function startCustomLogFromToday(){
   const tab = document.querySelector('.tab[data-t=\"2\"]');
   if(tab && tab.click) tab.click();
   setTimeout(()=>{ const inp=document.getElementById('new-ex-count'); if(inp){ inp.value=n; startCustomLog(); }},120);
+}
+
+function loadTemplate(name){
+  const r=lsG('custom_routines')||[]; const tpl = r.find(x=>x.name===name);
+  if(!tpl){alert('Template not found'); return;}
+  // open New tab and start with template
+  const tab = document.querySelector('.tab[data-t=\"2\"]'); if(tab && tab.click) tab.click();
+  setTimeout(()=>{ document.getElementById('new-ex-count').value = tpl.exercises.length; window._templateToLoad = tpl; startCustomLog(); }, 120);
+}
+
+function deleteTemplate(name){
+  if(!confirm('Delete template '+name+'?')) return;
+  const r=lsG('custom_routines')||[]; const idx=r.findIndex(x=>x.name===name);
+  if(idx>=0){ r.splice(idx,1); lsS('custom_routines',r); alert('Template deleted'); renderNewTab(); }
 }
 </script>
 </body>
