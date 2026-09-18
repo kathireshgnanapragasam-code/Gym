@@ -412,7 +412,7 @@ function renderProgress(){
     <button class="btn btn-ghost btn-sm" style="width:100%" onclick="document.getElementById('import-input').click()">Import from backup</button>
   </div>`;
 
-  document.getElementById('p1').innerHTML=html;
+  document.getElementById('p4').innerHTML=html;
   renderBodyDiagram();
 }
 

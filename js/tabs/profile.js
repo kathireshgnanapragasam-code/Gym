@@ -124,7 +124,7 @@ function renderProfile(){
     <button class="btn btn-grn btn-sm" style="width:100%;margin-top:10px" onclick="saveTargets()">Save targets</button>
   </div>`;
 
-  document.getElementById('p2').innerHTML=html;
+  document.getElementById('p5').innerHTML=html;
 }
 
 Object.assign(globalThis, {

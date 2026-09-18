@@ -189,7 +189,7 @@ function renderHistory(){
     ${biol?`<div class="nt ni" style="margin-top:8px">Biologics start: ${biol}</div>`:''}
   </div>`;
 
-  document.getElementById('p4').innerHTML=html;
+  document.getElementById('p7').innerHTML=html;
 }
 
 function saveBiol(){

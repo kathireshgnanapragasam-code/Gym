@@ -37,7 +37,7 @@ function renderFood(){
   const mealGap=_foodDay==='today'?getMealGapSuggestion():null;
   const swaps=_foodDay==='today'?getSwapSuggestions():[];
 
-  document.getElementById('p3').innerHTML=`
+  document.getElementById('p6').innerHTML=`
   ${mealGap&&mealGap.needed?`<div class="card warm" style="margin-bottom:10px">
     <div class="cl">Close today's gap</div>
     <div class="cs" style="margin-bottom:10px">${mealGap.proteinGap}g protein short, ${mealGap.kcalRemaining} kcal left in today's budget</div>
@@ -642,7 +642,7 @@ function renderRecipes(){
       <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="quickLog('${f.name.replace(/'/g,"\\'")}');document.querySelector('.tab[data-t=\"6\"]')?.click()">+ Log now</button>
     </div>`).join(''):`<div style="font-size:13px;color:var(--dim);padding:8px 0">No saved recipes yet — snap a HelloFresh pack or supplement label above.</div>`;
 
-  document.getElementById('p5').innerHTML=`
+  document.getElementById('p6').innerHTML=`
   <div class="card cyan" style="margin-bottom:12px">
     <div class="cl">Photo → recipe</div>
     <div class="ct" style="margin-bottom:4px">Save a nutrition label once, reuse forever</div>
